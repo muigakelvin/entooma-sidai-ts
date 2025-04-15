@@ -53,7 +53,7 @@ interface RowData {
   sublocation: string;
   location: string;
   fieldCoordinator: string;
-  dateSigned: Dayjs | null; // Use Day.js object or null
+  dateSigned: Dayjs | null; // Change type to Dayjs | null
   signedLocal: string;
   signedOrg: string;
   witnessLocal: string;
@@ -201,7 +201,6 @@ export default function DataTable() {
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-
     // Handle dateSigned field specifically
     if (name === "dateSigned") {
       const parsedDate = dayjs(value); // Parse the input value as a Day.js object
@@ -232,7 +231,7 @@ export default function DataTable() {
       location: submittedData.location || "N/A",
       gisDetails: submittedData.gisDetails || "Not Available",
       fieldCoordinator: submittedData.fieldCoordinator || "N/A",
-      dateSigned: submittedData.dateSigned?.format("YYYY-MM-DD") || null,
+      dateSigned: submittedData.dateSigned?.format("YYYY-MM-DD") || null, // Format as string
       signedLocal: submittedData.signedLocal || "No",
       signedOrg: submittedData.signedOrg || "No",
       witnessLocal: submittedData.witnessLocal || "N/A",
@@ -241,7 +240,6 @@ export default function DataTable() {
       source: isRepresentativeFormOpen ? "RepresentativeForm" : "Other",
       members: submittedData.members || [],
     };
-
     if (submittedData.id) {
       const updatedRows = rows.map((row) =>
         row.id === submittedData.id ? newRow : row
@@ -252,14 +250,12 @@ export default function DataTable() {
       setRows([...rows, newRow]);
       setFilteredRows([...filteredRows, newRow]);
     }
-
     handleCloseForm();
   };
 
   const handleEdit = (id: number) => {
     const rowToEdit = rows.find((row) => row.id === id);
     if (!rowToEdit) return;
-
     if (rowToEdit.source === "RepresentativeForm") {
       setFormData({
         id: rowToEdit.id,
@@ -503,7 +499,10 @@ export default function DataTable() {
                             <div className="detail-item">
                               <span className="detail-label">Date Signed:</span>
                               <span className="detail-value">
-                                {row.dateSigned?.format("YYYY-MM-DD") || "N/A"}
+                                {dayjs.isDayjs(row.dateSigned) &&
+                                row.dateSigned.isValid()
+                                  ? row.dateSigned.format("YYYY-MM-DD")
+                                  : "N/A"}
                               </span>
                             </div>
                             <div className="detail-item">

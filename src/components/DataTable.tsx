@@ -26,13 +26,13 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import AddIcon from "@mui/icons-material/Add";
-import MapIcon from "@mui/icons-material/Map"; // Import Map Icon
 import { DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs, { Dayjs } from "dayjs"; // Import dayjs for date handling
 import AddFormDialog from "./AddFormDialog"; // Import the AddFormDialog component
 import RepresentativeForm from "./RepresentativeForm"; // Import the RepresentativeForm component
+import FilterPanel from "./FilterPanel"; // Import the FilterPanel component
 import "../index.css";
 
 // Define types for the row data
@@ -42,7 +42,6 @@ interface Member {
   memberIdNumber: string;
   titleNumber: string;
 }
-
 interface RowData {
   id: number;
   communityMember: string;
@@ -122,13 +121,58 @@ const initialRows: RowData[] = [
 
 export default function DataTable() {
   const [expandedRow, setExpandedRow] = React.useState<number | null>(null);
-  const [searchTerm, setSearchTerm] = React.useState<string>("");
   const [rows, setRows] = React.useState<RowData[]>(initialRows);
   const [filteredRows, setFilteredRows] =
     React.useState<RowData[]>(initialRows);
   const [isFormOpen, setIsFormOpen] = React.useState<boolean>(false);
   const [isRepresentativeFormOpen, setIsRepresentativeFormOpen] =
     React.useState<boolean>(false); // State for Representative Form
+
+  // State for managing filters
+  const [filters, setFilters] = React.useState<Record<string, any>>({});
+  const [isFilterPanelOpen, setIsFilterPanelOpen] =
+    React.useState<boolean>(false);
+
+  // Define ALL columns for the filter panel, including hidden ones
+  const columns = [
+    { id: "communityMember", label: "Community Member" },
+    { id: "idNumber", label: "ID Number" },
+    { id: "phoneNumber", label: "Phone Number" },
+    { id: "landSize", label: "Land Size" },
+    { id: "communityName", label: "Community Name" },
+    { id: "sublocation", label: "Sublocation" }, // Hidden column
+    { id: "location", label: "Location" }, // Hidden column
+    { id: "fieldCoordinator", label: "Field Coordinator" }, // Hidden column
+    { id: "dateSigned", label: "Date Signed" }, // Hidden column
+    { id: "signedLocal", label: "Signed Local" }, // Hidden column
+    { id: "signedOrg", label: "Signed Org" }, // Hidden column
+    { id: "witnessLocal", label: "Witness Local" }, // Hidden column
+    { id: "loiDocument", label: "LOI Document" }, // Hidden column
+    { id: "mouDocument", label: "MOU Document" }, // Hidden column
+    { id: "gisDetails", label: "GIS Details" }, // Hidden column
+  ];
+
+  // Function to apply filters
+  const handleApplyFilters = (appliedFilters: Record<string, any>) => {
+    setFilters(appliedFilters);
+
+    // Filter rows based on applied filters
+    const filtered = rows.filter((row) =>
+      Object.entries(appliedFilters).every(([key, filter]) => {
+        if (!filter.visible) return true; // If column is not visible, skip filtering
+        const value = String(row[key]).toLowerCase();
+        return value.includes(String(filter.value).toLowerCase());
+      })
+    );
+
+    setFilteredRows(filtered);
+  };
+
+  // Function to reset filters
+  const handleResetFilters = () => {
+    setFilters({});
+    setFilteredRows(rows); // Reset to original rows
+  };
 
   // Initial states for Individual and Representative forms
   const initialIndividualFormData: RowData = {
@@ -151,30 +195,17 @@ export default function DataTable() {
     source: "Other",
     members: [],
   };
-
   const initialRepresentativeFormData: RowData = {
     ...initialIndividualFormData,
     source: "RepresentativeForm",
     groupName: "", // Include groupName explicitly
   };
-
   const [formData, setFormData] = React.useState<RowData>(
     initialIndividualFormData
   );
 
   const handleExpand = (id: number) => {
     setExpandedRow(expandedRow === id ? null : id);
-  };
-
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const term = e.target.value.toLowerCase();
-    setSearchTerm(term);
-    const filtered = rows.filter((row) =>
-      Object.values(row).some((value) =>
-        String(value).toLowerCase().includes(term)
-      )
-    );
-    setFilteredRows(filtered);
   };
 
   const handleOpenForm = (formType: "individual" | "representative") => {
@@ -321,16 +352,16 @@ export default function DataTable() {
           label="Search"
           variant="outlined"
           size="small"
-          value={searchTerm}
-          onChange={handleSearch}
-          className="search-bar"
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
-                <FilterListIcon className="filter-icon" />
+                <IconButton onClick={() => setIsFilterPanelOpen(true)}>
+                  <FilterListIcon className="filter-icon" />
+                </IconButton>
               </InputAdornment>
             ),
           }}
+          className="search-bar"
         />
         <Box className="action-buttons">
           <Button
@@ -351,6 +382,7 @@ export default function DataTable() {
           </Button>
         </Box>
       </Box>
+
       {/* Table Content */}
       <TableContainer component={Paper}>
         <Table>
@@ -687,6 +719,17 @@ export default function DataTable() {
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Filter Panel */}
+      <FilterPanel
+        open={isFilterPanelOpen}
+        onClose={() => setIsFilterPanelOpen(false)}
+        columns={columns}
+        filters={filters}
+        onApply={handleApplyFilters}
+        onReset={handleResetFilters}
+      />
+
       {/* Add/Edit Form Dialog */}
       {isFormOpen && (
         <AddFormDialog

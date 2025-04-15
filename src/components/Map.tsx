@@ -1,4 +1,3 @@
-// src/components/LineChart.tsx
 import React, { useState, useRef } from "react";
 import { LoadScript, GoogleMap, Polyline } from "@react-google-maps/api";
 
@@ -14,12 +13,14 @@ const containerStyle: React.CSSProperties = {
   height: "100%",
 };
 
-const defaultCenter: google.maps.LatLngLiteral = { lat: 0, lng: 0 };
+// Default center set to Kenya (Nairobi)
+const defaultCenter: google.maps.LatLngLiteral = { lat: -1.2921, lng: 36.8219 };
 
 const LineChart: React.FC = () => {
   // State definitions with type annotations
   const [trackPoints, setTrackPoints] = useState<TrackPoint[]>([]);
-  const [mapCenter, setMapCenter] = useState<google.maps.LatLngLiteral>(defaultCenter);
+  const [mapCenter, setMapCenter] =
+    useState<google.maps.LatLngLiteral>(defaultCenter);
   const mapRef = useRef<google.maps.Map | null>(null);
 
   // Handle file upload
@@ -80,7 +81,8 @@ const LineChart: React.FC = () => {
         <GoogleMap
           mapContainerStyle={containerStyle}
           center={mapCenter}
-          zoom={10}
+          zoom={6} // Adjust zoom level to show Kenya
+          mapTypeId="satellite" // Set default view to satellite
           onLoad={onLoad}
           className="gMaps"
         >

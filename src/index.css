@@ -1,0 +1,325 @@
+/* General Styles */
+body {
+  margin: 0;
+  font-family: "Inter", sans-serif;
+  background-color: #121212;
+  color: #e0e0e0;
+  line-height: 1.6;
+}
+
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #1e1e1e;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  transition: padding 0.3s ease;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #ffffff;
+  position: relative;
+  padding-left: 20px;
+}
+
+.section-title::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 20px;
+  background-color: #4caf50;
+  border-radius: 2px;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+}
+
+.charts-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.chart-wrapper {
+  background-color: #2b2b2b;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height: 500px;
+}
+
+.chart-wrapper:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.4);
+}
+
+.card-header {
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #444;
+}
+
+.map-container {
+  height: calc(100% - 60px);
+}
+
+.file-input {
+  margin-bottom: 20px;
+  display: block;
+  width: 100%;
+  padding: 8px;
+  background: #3a3a3a;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: #e0e0e0;
+}
+
+.gMaps {
+  height: 100%;
+  width: 100%;
+  border-radius: 4px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .charts-container {
+    grid-template-columns: 1fr;
+  }
+  .chart-wrapper {
+    min-width: 100%;
+  }
+}
+
+/* Data Table Styles */
+.data-table {
+  background-color: #1e1e1e !important;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background-color: #2b2b2b;
+  border-bottom: 1px solid #444;
+}
+
+.search-bar {
+  flex: 1;
+  max-width: 300px;
+  background: #3a3a3a;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: #e0e0e0;
+  transition: border-color 0.3s ease;
+}
+
+.search-bar:focus-within {
+  border-color: #4caf50;
+}
+
+.search-bar .MuiOutlinedInput-root {
+  color: #e0e0e0;
+}
+
+.search-bar .MuiOutlinedInput-notchedOutline {
+  border: none;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 16px;
+}
+
+.action-buttons .MuiButton-containedPrimary {
+  background-color: #4caf50;
+  color: #fff;
+  font-weight: bold;
+  text-transform: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.action-buttons .MuiButton-containedPrimary:hover {
+  background-color: #45a049;
+}
+
+/* Table Styles */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #1e1e1e;
+}
+
+thead {
+  background-color: #2b2b2b;
+}
+
+thead th {
+  color: #e0e0e0;
+  font-weight: bold;
+  font-size: 1rem;
+  text-align: left;
+  padding: 12px;
+  border-bottom: 2px solid #444;
+}
+
+tbody tr {
+  background-color: #2b2b2b;
+  transition: background-color 0.3s ease;
+}
+
+tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+td,
+th {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #444;
+  word-break: break-word;
+}
+
+/* Equal Column Widths */
+table th,
+table td {
+  width: auto; /* Allow columns to adjust based on content */
+}
+
+/* Ensure equal distribution for specific columns */
+table th.main-column,
+table td.main-column {
+  width: 16.66%; /* Divide into 6 equal parts */
+}
+
+table th.action-column,
+table td.action-column {
+  width: 10%; /* Smaller width for action buttons */
+}
+
+/* Action Buttons */
+.action-column {
+  text-align: right;
+}
+
+.action-column button {
+  margin-left: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.action-column button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Tooltip Styling */
+.MuiTooltip-tooltip {
+  background-color: #2b2b2b;
+  color: #e0e0e0;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 0.875rem;
+}
+
+/* Detail Panel */
+.detail-panel {
+  background-color: #3a3a3a;
+  border-top: 1px solid #444;
+  padding: 16px;
+}
+
+.detail-card {
+  background-color: #2b2b2b;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 16px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  flex: 1 1 calc(33% - 16px);
+  min-width: 300px;
+}
+
+.detail-card.active-card {
+  border-color: #4caf50;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  transform: translateX(5px);
+}
+
+.detail-header {
+  color: #4caf50;
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+}
+
+.detail-item {
+  margin-bottom: 8px;
+}
+
+.detail-label {
+  font-weight: bold;
+  color: #e0e0e0;
+}
+
+.detail-value {
+  color: #e0e0e0;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 600px) {
+  table th.main-column,
+  table td.main-column {
+    width: 50%; /* Two columns per row on small screens */
+  }
+
+  table th.action-column,
+  table td.action-column {
+    width: auto;
+  }
+
+  .detail-card {
+    flex: 1 1 100%;
+  }
+}
+
+/* Card Container */
+.card-container {
+  display: flex;
+  flex-wrap: wrap; /* Allow wrapping to the next line */
+  gap: 16px; /* Consistent spacing between cards */
+  justify-content: space-between; /* Distribute cards evenly */
+}
+
+/* Detail Cards */
+.detail-card {
+  flex: 1 1 calc(33% - 16px); /* Three cards per row */
+  min-width: 300px; /* Minimum width for each card */
+  box-sizing: border-box; /* Ensure padding and borders are included in width */
+}
+
+/* Fourth Card (Conditional) */
+.detail-card:nth-child(4) {
+  flex-basis: 100%; /* Full width for the fourth card */
+  order: 4; /* Ensure it appears after the first three cards */
+}

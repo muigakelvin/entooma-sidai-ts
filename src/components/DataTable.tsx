@@ -624,7 +624,7 @@ export default function DataTable() {
                                 gutterBottom
                                 sx={{
                                   fontWeight: "bold",
-                                  color: "#333",
+                                  color: "#4caf50",
                                   marginBottom: 2,
                                 }}
                               >

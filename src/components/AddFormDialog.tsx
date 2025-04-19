@@ -1,4 +1,3 @@
-// src/components/AddFormDialog.tsx
 import React from "react";
 import {
   Dialog,
@@ -14,8 +13,9 @@ import {
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers";
-import dayjs, { Dayjs } from "dayjs"; // Import dayjs for date handling
-import "../index.css"; // Import the CSS file
+import dayjs, { Dayjs } from "dayjs";
+import { submitAddFormDialog } from "../services/apiService"; // Import the API service function
+import "../index.css";
 
 // Define the shape of the form data
 interface FormData {
@@ -31,39 +31,88 @@ interface FormData {
   witnessLocal: string;
   signedLocal: string;
   signedOrg: string;
-  dateSigned: Dayjs | null;
-  loiDocument: string;
-  mouDocument: string;
-  gisDetails: string;
+  dateSigned: Dayjs | null; // Date as a Dayjs object or null
+  loiDocument: string; // Base64 string
+  mouDocument: string; // Base64 string
+  gisDetails: string; // Base64 string
+  source: string; // Add the source field
 }
 
 // Define the props interface
 interface AddFormDialogProps {
   open: boolean;
   onClose: () => void;
-  formData: FormData;
-  onFormChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSubmit: (data: FormData) => void;
 }
 
-export default function AddFormDialog({
-  open,
-  onClose,
-  formData,
-  onFormChange,
-  onFileChange,
-  onSubmit,
-}: AddFormDialogProps) {
-  const handleSubmit = () => {
-    onSubmit(formData);
+export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
+  const [formData, setFormData] = React.useState<FormData>({
+    communityMember: "",
+    idNumber: "",
+    phoneNumber: "",
+    communityName: "",
+    landSize: "",
+    sublocation: "",
+    location: "",
+    fieldCoordinator: "",
+    witnessLocal: "",
+    signedLocal: "",
+    signedOrg: "",
+    dateSigned: null, // Initialize as null
+    loiDocument: "",
+    mouDocument: "",
+    gisDetails: "",
+    source: "Other", // Default source value
+  });
+
+  // Handle changes in text fields
+  const handleFormChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    setFormData((prevData) => ({ ...prevData, [name]: value }));
+  };
+
+  // Handle file uploads and convert to base64
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        const fieldName = event.target.name;
+        setFormData((prevData) => ({
+          ...prevData,
+          [fieldName]: base64String, // Store file as base64
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle form submission
+  const handleSubmit = async () => {
+    try {
+      // Format the payload to match the backend's expectations
+      const payload: FormData = {
+        ...formData,
+        dateSigned: formData.dateSigned?.format("YYYY-MM-DD") || null, // Format date as YYYY-MM-DD or send null
+        source: formData.source || "Other", // Default source to "Other"
+      };
+
+      console.log("Sending payload to backend:", payload); // Log the payload
+
+      // Submit the payload to the backend
+      await submitAddFormDialog(payload);
+
+      alert("Form submitted successfully!");
+      onClose(); // Close the dialog after submission
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      alert("An error occurred while submitting the form.");
+    }
   };
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle className="dialog-title">
-        {formData.id ? "Edit Record" : "Add New Record"}
-      </DialogTitle>
+      <DialogTitle className="dialog-title">Add New Record</DialogTitle>
       <DialogContent className="dialog-content">
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <Box component="form" className="form-container">
@@ -78,7 +127,7 @@ export default function AddFormDialog({
                     name="communityMember"
                     label="Name"
                     value={formData.communityMember}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -88,7 +137,7 @@ export default function AddFormDialog({
                     name="idNumber"
                     label="ID Number"
                     value={formData.idNumber}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -98,7 +147,7 @@ export default function AddFormDialog({
                     name="phoneNumber"
                     label="Phone Number"
                     value={formData.phoneNumber}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -108,7 +157,7 @@ export default function AddFormDialog({
                     name="communityName"
                     label="Community Name"
                     value={formData.communityName}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -127,7 +176,7 @@ export default function AddFormDialog({
                     name="landSize"
                     label="Land Size (acres)"
                     value={formData.landSize}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -137,7 +186,7 @@ export default function AddFormDialog({
                     name="sublocation"
                     label="Sublocation"
                     value={formData.sublocation}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -147,7 +196,7 @@ export default function AddFormDialog({
                     name="location"
                     label="Location"
                     value={formData.location}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -166,7 +215,7 @@ export default function AddFormDialog({
                     name="fieldCoordinator"
                     label="Field Coordinator"
                     value={formData.fieldCoordinator}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -176,7 +225,7 @@ export default function AddFormDialog({
                     name="witnessLocal"
                     label="Local Witness"
                     value={formData.witnessLocal}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -186,7 +235,7 @@ export default function AddFormDialog({
                     name="signedLocal"
                     label="Signed (Local)"
                     value={formData.signedLocal}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -196,7 +245,7 @@ export default function AddFormDialog({
                     name="signedOrg"
                     label="Signed (Org)"
                     value={formData.signedOrg}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -206,9 +255,10 @@ export default function AddFormDialog({
                     label="Date Signed"
                     value={formData.dateSigned}
                     onChange={(newValue) =>
-                      onFormChange({
-                        target: { name: "dateSigned", value: newValue },
-                      })
+                      setFormData((prevData) => ({
+                        ...prevData,
+                        dateSigned: newValue || null, // Ensure newValue is a dayjs object or null
+                      }))
                     }
                     renderInput={(params) => (
                       <TextField
@@ -234,7 +284,7 @@ export default function AddFormDialog({
                     name="loiDocument"
                     label="Upload LOI Document (.pdf)"
                     inputProps={{ accept: ".pdf" }}
-                    onChange={onFileChange}
+                    onChange={handleFileChange}
                     fullWidth
                     className="file-upload"
                   />
@@ -245,7 +295,7 @@ export default function AddFormDialog({
                     name="mouDocument"
                     label="Upload MOU Document (.pdf)"
                     inputProps={{ accept: ".pdf" }}
-                    onChange={onFileChange}
+                    onChange={handleFileChange}
                     fullWidth
                     className="file-upload"
                   />
@@ -256,7 +306,7 @@ export default function AddFormDialog({
                     name="gisDetails"
                     label="Upload GIS File (.gpx, .kml)"
                     inputProps={{ accept: ".gpx,.kml" }}
-                    onChange={onFileChange}
+                    onChange={handleFileChange}
                     fullWidth
                     className="file-upload"
                   />
@@ -271,7 +321,7 @@ export default function AddFormDialog({
           Cancel
         </Button>
         <Button onClick={handleSubmit} className="submit-button">
-          {formData.id ? "Update Record" : "Add Record"}
+          Add Record
         </Button>
       </DialogActions>
     </Dialog>

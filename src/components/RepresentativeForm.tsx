@@ -1,4 +1,3 @@
-// src/components/RepresentativeForm.tsx
 import React from "react";
 import {
   Dialog,
@@ -18,6 +17,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers";
 import AddIcon from "@mui/icons-material/Add";
 import dayjs, { Dayjs } from "dayjs";
+import { submitRepresentativeForm } from "../services/apiService";
 import "../index.css";
 
 // Define types for the form data and members
@@ -43,40 +43,76 @@ interface FormData {
   signedLocal: string;
   signedOrg: string;
   dateSigned: Dayjs | null;
-  loiDocument: File | null;
-  mouDocument: File | null;
-  gisDetails: File | null;
+  loiDocument: string | null; // Base64 string
+  mouDocument: string | null; // Base64 string
+  gisDetails: string | null; // Base64 string
   members: Member[];
+  source: string; // Added source field
 }
 
 interface RepresentativeFormProps {
   open: boolean;
   onClose: () => void;
-  formData: FormData;
-  onFormChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onSubmit: (data: FormData) => void;
 }
 
 export default function RepresentativeForm({
   open,
   onClose,
-  formData,
-  onFormChange,
-  onFileChange,
-  onSubmit,
 }: RepresentativeFormProps) {
-  const [members, setMembers] = React.useState<Member[]>(
-    formData.members || [
+  const [formData, setFormData] = React.useState<FormData>({
+    groupName: "",
+    representativeName: "",
+    representativeIdNumber: "",
+    representativePhone: "",
+    communityName: "",
+    landSize: "",
+    sublocation: "",
+    location: "",
+    fieldCoordinator: "",
+    witnessLocal: "",
+    signedLocal: "",
+    signedOrg: "",
+    dateSigned: null,
+    loiDocument: null,
+    mouDocument: null,
+    gisDetails: null,
+    members: [
       {
         memberIdNumber: "",
         memberName: "",
         memberPhoneNumber: "",
         titleNumber: "",
       },
-    ]
-  );
+    ],
+    source: "Other", // Default source value
+  });
 
+  const [members, setMembers] = React.useState<Member[]>(formData.members);
+
+  // Handle changes in form fields
+  const handleFormChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    setFormData((prevData) => ({ ...prevData, [name]: value }));
+  };
+
+  // Handle file uploads and convert to base64
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        const fieldName = event.target.name;
+        setFormData((prevData) => ({
+          ...prevData,
+          [fieldName]: base64String, // Store file as base64
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle changes in group member fields
   const handleMemberChange = (
     index: number,
     field: keyof Member,
@@ -88,6 +124,7 @@ export default function RepresentativeForm({
     setMembers(updatedMembers);
   };
 
+  // Add a new group member field
   const addMemberField = () => {
     setMembers([
       ...members,
@@ -100,11 +137,13 @@ export default function RepresentativeForm({
     ]);
   };
 
+  // Remove a group member field
   const removeMemberField = (index: number) => {
     const updatedMembers = members.filter((_, i) => i !== index);
     setMembers(updatedMembers);
   };
 
+  // Validate group members
   const validateMembers = () => {
     const isValid = members.every(
       (member) => member.memberName && member.memberPhoneNumber
@@ -116,16 +155,30 @@ export default function RepresentativeForm({
     return true;
   };
 
-  const handleSubmit = () => {
+  // Handle form submission
+  const handleSubmit = async () => {
     if (!validateMembers()) return;
-    onSubmit({ ...formData, members });
+
+    try {
+      const payload = {
+        ...formData,
+        dateSigned: formData.dateSigned?.format("YYYY-MM-DD"), // Format date for backend
+        members,
+      };
+
+      console.log("Sending payload to backend:", payload); // Log the payload being sent
+      await submitRepresentativeForm(payload);
+      alert("Form submitted successfully!");
+      onClose(); // Close the dialog after submission
+    } catch (error) {
+      console.error("Failed to submit form:", error);
+      alert("An error occurred while submitting the form.");
+    }
   };
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle className="dialog-title">
-        {formData.id ? "Edit Representative" : "Add New Representative"}
-      </DialogTitle>
+      <DialogTitle className="dialog-title">Add New Representative</DialogTitle>
       <DialogContent className="dialog-content">
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <Box component="form" className="form-container">
@@ -140,7 +193,7 @@ export default function RepresentativeForm({
                     name="groupName"
                     label="Group Name"
                     value={formData.groupName}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -150,7 +203,7 @@ export default function RepresentativeForm({
                     name="representativeName"
                     label="Representative Name"
                     value={formData.representativeName}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -160,7 +213,7 @@ export default function RepresentativeForm({
                     name="representativeIdNumber"
                     label="Representative ID Number"
                     value={formData.representativeIdNumber}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -170,7 +223,7 @@ export default function RepresentativeForm({
                     name="representativePhone"
                     label="Representative Phone Number"
                     value={formData.representativePhone}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -180,7 +233,7 @@ export default function RepresentativeForm({
                     name="communityName"
                     label="Community Name"
                     value={formData.communityName}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -190,7 +243,7 @@ export default function RepresentativeForm({
                     name="landSize"
                     label="Land Size (acres)"
                     value={formData.landSize}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -200,7 +253,7 @@ export default function RepresentativeForm({
                     name="sublocation"
                     label="Sublocation"
                     value={formData.sublocation}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -210,13 +263,14 @@ export default function RepresentativeForm({
                     name="location"
                     label="Location"
                     value={formData.location}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
                 </Grid>
               </Grid>
             </Box>
+
             {/* Group Members Section */}
             <Box className="section-box">
               <Typography variant="h6" className="section-header">
@@ -310,6 +364,7 @@ export default function RepresentativeForm({
                 </Fab>
               </Tooltip>
             </Box>
+
             {/* Authorized Signatories Section */}
             <Box className="section-box">
               <Typography variant="h6" className="section-header">
@@ -321,7 +376,7 @@ export default function RepresentativeForm({
                     name="fieldCoordinator"
                     label="Field Coordinator"
                     value={formData.fieldCoordinator}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -331,7 +386,7 @@ export default function RepresentativeForm({
                     name="witnessLocal"
                     label="Local Witness"
                     value={formData.witnessLocal}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -341,7 +396,7 @@ export default function RepresentativeForm({
                     name="signedLocal"
                     label="Signed (Local)"
                     value={formData.signedLocal}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -351,7 +406,7 @@ export default function RepresentativeForm({
                     name="signedOrg"
                     label="Signed (Org)"
                     value={formData.signedOrg}
-                    onChange={onFormChange}
+                    onChange={handleFormChange}
                     fullWidth
                     className="text-field"
                   />
@@ -361,9 +416,10 @@ export default function RepresentativeForm({
                     label="Date Signed"
                     value={formData.dateSigned}
                     onChange={(newValue) =>
-                      onFormChange({
-                        target: { name: "dateSigned", value: newValue },
-                      } as React.ChangeEvent<HTMLInputElement>)
+                      setFormData((prevData) => ({
+                        ...prevData,
+                        dateSigned: newValue,
+                      }))
                     }
                     renderInput={(params) => (
                       <TextField
@@ -376,6 +432,7 @@ export default function RepresentativeForm({
                 </Grid>
               </Grid>
             </Box>
+
             {/* Documents and GIS Information Section */}
             <Box className="section-box">
               <Typography variant="h6" className="section-header">
@@ -388,7 +445,7 @@ export default function RepresentativeForm({
                     name="loiDocument"
                     label="Upload LOI Document (.pdf)"
                     inputProps={{ accept: ".pdf" }}
-                    onChange={onFileChange}
+                    onChange={handleFileChange}
                     fullWidth
                     className="file-upload"
                   />
@@ -399,7 +456,7 @@ export default function RepresentativeForm({
                     name="mouDocument"
                     label="Upload MOU Document (.pdf)"
                     inputProps={{ accept: ".pdf" }}
-                    onChange={onFileChange}
+                    onChange={handleFileChange}
                     fullWidth
                     className="file-upload"
                   />
@@ -410,7 +467,7 @@ export default function RepresentativeForm({
                     name="gisDetails"
                     label="Upload GIS File (.gpx, .kml)"
                     inputProps={{ accept: ".gpx,.kml" }}
-                    onChange={onFileChange}
+                    onChange={handleFileChange}
                     fullWidth
                     className="file-upload"
                   />
@@ -425,7 +482,7 @@ export default function RepresentativeForm({
           Cancel
         </Button>
         <Button onClick={handleSubmit} className="submit-button">
-          {formData.id ? "Update Record" : "Add Record"}
+          Add Record
         </Button>
       </DialogActions>
     </Dialog>

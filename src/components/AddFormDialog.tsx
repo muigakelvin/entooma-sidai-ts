@@ -32,9 +32,9 @@ interface FormData {
   signedLocal: string;
   signedOrg: string;
   dateSigned: Dayjs | null; // Date as a Dayjs object or null
-  loiDocument: string; // Base64 string
-  mouDocument: string; // Base64 string
-  gisDetails: string; // Base64 string
+  loiDocument: string | null; // Base64 string
+  mouDocument: string | null; // Base64 string
+  gisDetails: string | null; // Base64 string
   source: string; // Add the source field
 }
 
@@ -58,9 +58,9 @@ export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
     signedLocal: "",
     signedOrg: "",
     dateSigned: null, // Initialize as null
-    loiDocument: "",
-    mouDocument: "",
-    gisDetails: "",
+    loiDocument: null,
+    mouDocument: null,
+    gisDetails: null,
     source: "Other", // Default source value
   });
 

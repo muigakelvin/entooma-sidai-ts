@@ -1,3 +1,4 @@
+// src/components/RepresentativeForm.tsx
 import React from "react";
 import {
   Dialog,
@@ -20,7 +21,6 @@ import dayjs, { Dayjs } from "dayjs";
 import { submitRepresentativeForm } from "../services/apiService";
 import "../index.css";
 
-// Define types for the form data and members
 interface Member {
   memberIdNumber: string;
   memberName: string;
@@ -43,76 +43,34 @@ interface FormData {
   signedLocal: string;
   signedOrg: string;
   dateSigned: Dayjs | null;
-  loiDocument: string | null; // Base64 string
-  mouDocument: string | null; // Base64 string
-  gisDetails: string | null; // Base64 string
+  loiDocument: string | null;
+  mouDocument: string | null;
+  gisDetails: string | null;
   members: Member[];
-  source: string; // Added source field
+  source: string;
 }
 
 interface RepresentativeFormProps {
   open: boolean;
   onClose: () => void;
+  formData: FormData;
+  onFormChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onSubmit: () => void;
+  onFormSubmitSuccess?: (response: any) => void;
 }
 
 export default function RepresentativeForm({
   open,
   onClose,
+  formData,
+  onFormChange,
+  onFileChange,
+  onSubmit,
+  onFormSubmitSuccess,
 }: RepresentativeFormProps) {
-  const [formData, setFormData] = React.useState<FormData>({
-    groupName: "",
-    representativeName: "",
-    representativeIdNumber: "",
-    representativePhone: "",
-    communityName: "",
-    landSize: "",
-    sublocation: "",
-    location: "",
-    fieldCoordinator: "",
-    witnessLocal: "",
-    signedLocal: "",
-    signedOrg: "",
-    dateSigned: null,
-    loiDocument: null,
-    mouDocument: null,
-    gisDetails: null,
-    members: [
-      {
-        memberIdNumber: "",
-        memberName: "",
-        memberPhoneNumber: "",
-        titleNumber: "",
-      },
-    ],
-    source: "RepresentativeForm", // Default source value
-  });
-
   const [members, setMembers] = React.useState<Member[]>(formData.members);
 
-  // Handle changes in form fields
-  const handleFormChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = event.target;
-    setFormData((prevData) => ({ ...prevData, [name]: value }));
-  };
-
-  // Handle file uploads and convert to base64
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        const fieldName = event.target.name;
-        setFormData((prevData) => ({
-          ...prevData,
-          [fieldName]: base64String, // Store file as base64
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Handle changes in group member fields
   const handleMemberChange = (
     index: number,
     field: keyof Member,
@@ -124,7 +82,6 @@ export default function RepresentativeForm({
     setMembers(updatedMembers);
   };
 
-  // Add a new group member field
   const addMemberField = () => {
     setMembers([
       ...members,
@@ -137,13 +94,11 @@ export default function RepresentativeForm({
     ]);
   };
 
-  // Remove a group member field
   const removeMemberField = (index: number) => {
     const updatedMembers = members.filter((_, i) => i !== index);
     setMembers(updatedMembers);
   };
 
-  // Validate group members
   const validateMembers = () => {
     const isValid = members.every(
       (member) => member.memberName && member.memberPhoneNumber
@@ -155,24 +110,50 @@ export default function RepresentativeForm({
     return true;
   };
 
-  // Handle form submission
   const handleSubmit = async () => {
     if (!validateMembers()) return;
-
     try {
       const payload = {
         ...formData,
-        dateSigned: formData.dateSigned?.format("YYYY-MM-DD"), // Format date for backend
+        dateSigned: formData.dateSigned?.format("YYYY-MM-DD"),
         members,
       };
-
-      console.log("Sending payload to backend:", payload); // Log the payload being sent
-      await submitRepresentativeForm(payload);
+      console.log("Sending payload to backend:", payload);
+      const response = await submitRepresentativeForm(payload);
+      if (onFormSubmitSuccess) {
+        onFormSubmitSuccess(response);
+      }
       alert("Form submitted successfully!");
-      onClose(); // Close the dialog after submission
+      onClose();
     } catch (error) {
       console.error("Failed to submit form:", error);
       alert("An error occurred while submitting the form.");
+    }
+  };
+
+  // File handling functions
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const base64 = await convertFileToBase64(file);
+        onFileChange({
+          ...e,
+          target: { ...e.target, value: base64 },
+        } as React.ChangeEvent<HTMLInputElement>);
+      } catch (error) {
+        console.error("Error converting file to Base64:", error);
+        alert("An error occurred while processing the file.");
+      }
     }
   };
 
@@ -188,89 +169,88 @@ export default function RepresentativeForm({
                 Community Group Details
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} className="grid-item">
+                <Grid item xs={12} sm={6}>
                   <TextField
                     name="groupName"
                     label="Group Name"
                     value={formData.groupName}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
                     className="text-field"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} className="grid-item">
+                <Grid item xs={12} sm={6}>
                   <TextField
                     name="representativeName"
                     label="Representative Name"
                     value={formData.representativeName}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
                     className="text-field"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} className="grid-item">
+                <Grid item xs={12} sm={6}>
                   <TextField
                     name="representativeIdNumber"
                     label="Representative ID Number"
                     value={formData.representativeIdNumber}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
                     className="text-field"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} className="grid-item">
+                <Grid item xs={12} sm={6}>
                   <TextField
                     name="representativePhone"
                     label="Representative Phone Number"
                     value={formData.representativePhone}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
                     className="text-field"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} className="grid-item">
+                <Grid item xs={12} sm={6}>
                   <TextField
                     name="communityName"
                     label="Community Name"
                     value={formData.communityName}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
                     className="text-field"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} className="grid-item">
+                <Grid item xs={12} sm={6}>
                   <TextField
                     name="landSize"
                     label="Land Size (acres)"
                     value={formData.landSize}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
                     className="text-field"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} className="grid-item">
+                <Grid item xs={12} sm={6}>
                   <TextField
                     name="sublocation"
                     label="Sublocation"
                     value={formData.sublocation}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
                     className="text-field"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} className="grid-item">
+                <Grid item xs={12} sm={6}>
                   <TextField
                     name="location"
                     label="Location"
                     value={formData.location}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
                     className="text-field"
                   />
                 </Grid>
               </Grid>
             </Box>
-
             {/* Group Members Section */}
             <Box className="section-box">
               <Typography variant="h6" className="section-header">
@@ -279,7 +259,7 @@ export default function RepresentativeForm({
               {members.map((member, index) => (
                 <Box key={index} className="member-box">
                   <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6} className="grid-item">
+                    <Grid item xs={12} sm={6}>
                       <TextField
                         name={`memberName-${index}`}
                         label="Member Name"
@@ -295,7 +275,7 @@ export default function RepresentativeForm({
                         className="text-field"
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6} className="grid-item">
+                    <Grid item xs={12} sm={6}>
                       <TextField
                         name={`memberPhoneNumber-${index}`}
                         label="Member Phone Number"
@@ -311,7 +291,7 @@ export default function RepresentativeForm({
                         className="text-field"
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6} className="grid-item">
+                    <Grid item xs={12} sm={6}>
                       <TextField
                         name={`memberIdNumber-${index}`}
                         label="Member ID Number"
@@ -327,7 +307,7 @@ export default function RepresentativeForm({
                         className="text-field"
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6} className="grid-item">
+                    <Grid item xs={12} sm={6}>
                       <TextField
                         name={`titleNumber-${index}`}
                         label="Title Number"
@@ -364,62 +344,60 @@ export default function RepresentativeForm({
                 </Fab>
               </Tooltip>
             </Box>
-
             {/* Authorized Signatories Section */}
             <Box className="section-box">
               <Typography variant="h6" className="section-header">
                 Authorized Signatories
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} className="grid-item">
+                <Grid item xs={12} sm={6}>
                   <TextField
                     name="fieldCoordinator"
                     label="Field Coordinator"
                     value={formData.fieldCoordinator}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
                     className="text-field"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} className="grid-item">
+                <Grid item xs={12} sm={6}>
                   <TextField
                     name="witnessLocal"
                     label="Local Witness"
                     value={formData.witnessLocal}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
                     className="text-field"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} className="grid-item">
+                <Grid item xs={12} sm={6}>
                   <TextField
                     name="signedLocal"
                     label="Signed (Local)"
                     value={formData.signedLocal}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
                     className="text-field"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} className="grid-item">
+                <Grid item xs={12} sm={6}>
                   <TextField
                     name="signedOrg"
                     label="Signed (Org)"
                     value={formData.signedOrg}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
                     className="text-field"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} className="grid-item">
+                <Grid item xs={12} sm={6}>
                   <DatePicker
                     label="Date Signed"
                     value={formData.dateSigned}
                     onChange={(newValue) =>
-                      setFormData((prevData) => ({
-                        ...prevData,
-                        dateSigned: newValue,
-                      }))
+                      onFormChange({
+                        target: { name: "dateSigned", value: newValue },
+                      } as React.ChangeEvent<HTMLInputElement>)
                     }
                     renderInput={(params) => (
                       <TextField
@@ -432,14 +410,13 @@ export default function RepresentativeForm({
                 </Grid>
               </Grid>
             </Box>
-
             {/* Documents and GIS Information Section */}
             <Box className="section-box">
               <Typography variant="h6" className="section-header">
                 Documents and GIS Information
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} className="grid-item">
+                <Grid item xs={12} sm={6}>
                   <TextField
                     type="file"
                     name="loiDocument"
@@ -450,7 +427,7 @@ export default function RepresentativeForm({
                     className="file-upload"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} className="grid-item">
+                <Grid item xs={12} sm={6}>
                   <TextField
                     type="file"
                     name="mouDocument"
@@ -461,7 +438,7 @@ export default function RepresentativeForm({
                     className="file-upload"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} className="grid-item">
+                <Grid item xs={12} sm={6}>
                   <TextField
                     type="file"
                     name="gisDetails"

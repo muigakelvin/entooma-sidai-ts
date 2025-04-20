@@ -1,3 +1,4 @@
+// src/components/AddFormDialog.tsx
 import React from "react";
 import {
   Dialog,
@@ -9,6 +10,7 @@ import {
   Grid,
   TextField,
   Typography,
+  Alert,
 } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -42,34 +44,20 @@ interface FormData {
 interface AddFormDialogProps {
   open: boolean;
   onClose: () => void;
+  onFormSubmitSuccess?: (response: any) => void; // Callback for successful submission
+  formData: FormData;
+  onFormChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  isEditMode: boolean;
 }
 
-export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
-  const [formData, setFormData] = React.useState<FormData>({
-    communityMember: "",
-    idNumber: "",
-    phoneNumber: "",
-    communityName: "",
-    landSize: "",
-    sublocation: "",
-    location: "",
-    fieldCoordinator: "",
-    witnessLocal: "",
-    signedLocal: "",
-    signedOrg: "",
-    dateSigned: null, // Initialize as null
-    loiDocument: null,
-    mouDocument: null,
-    gisDetails: null,
-    source: "Other", // Default source value
-  });
-
-  // Handle changes in text fields
-  const handleFormChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = event.target;
-    setFormData((prevData) => ({ ...prevData, [name]: value }));
-  };
-
+export default function AddFormDialog({
+  open,
+  onClose,
+  onFormSubmitSuccess,
+  formData,
+  onFormChange,
+  isEditMode,
+}: AddFormDialogProps) {
   // Handle file uploads and convert to base64
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -78,18 +66,57 @@ export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
       reader.onloadend = () => {
         const base64String = reader.result as string;
         const fieldName = event.target.name;
-        setFormData((prevData) => ({
-          ...prevData,
-          [fieldName]: base64String, // Store file as base64
-        }));
+        onFormChange({
+          target: { name: fieldName, value: base64String },
+        } as React.ChangeEvent<HTMLInputElement>);
       };
       reader.readAsDataURL(file);
     }
   };
 
+  // Validate form fields before submission
+  const validateForm = (): boolean => {
+    const requiredFields = [
+      "communityMember",
+      "idNumber",
+      "phoneNumber",
+      "communityName",
+      "landSize",
+      "sublocation",
+      "location",
+      "fieldCoordinator",
+      "witnessLocal",
+      "signedLocal",
+      "signedOrg",
+    ];
+
+    const missingFields = requiredFields.filter(
+      (field) => !formData[field as keyof FormData]
+    );
+
+    if (missingFields.length > 0) {
+      alert(
+        `Please fill out the following required fields: ${missingFields.join(
+          ", "
+        )}`
+      );
+      return false;
+    }
+
+    if (!formData.dateSigned) {
+      alert("Please select a valid date for 'Date Signed'.");
+      return false;
+    }
+
+    return true;
+  };
+
   // Handle form submission
   const handleSubmit = async () => {
     try {
+      // Validate the form data
+      if (!validateForm()) return;
+
       // Format the payload to match the backend's expectations
       const payload: FormData = {
         ...formData,
@@ -100,7 +127,17 @@ export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
       console.log("Sending payload to backend:", payload); // Log the payload
 
       // Submit the payload to the backend
-      await submitAddFormDialog(payload);
+      const response = await submitAddFormDialog(payload);
+
+      // Validate the response
+      if (!response || !response.data) {
+        throw new Error("Invalid response from server. No data received.");
+      }
+
+      // Invoke the success callback with the backend response
+      if (onFormSubmitSuccess) {
+        onFormSubmitSuccess(response); // Pass the response to the parent component
+      }
 
       alert("Form submitted successfully!");
       onClose(); // Close the dialog after submission
@@ -112,7 +149,9 @@ export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle className="dialog-title">Add New Record</DialogTitle>
+      <DialogTitle className="dialog-title">
+        {isEditMode ? "Edit Record" : "Add New Record"}
+      </DialogTitle>
       <DialogContent className="dialog-content">
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <Box component="form" className="form-container">
@@ -127,8 +166,9 @@ export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
                     name="communityMember"
                     label="Name"
                     value={formData.communityMember}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
+                    required
                     className="text-field"
                   />
                 </Grid>
@@ -137,8 +177,9 @@ export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
                     name="idNumber"
                     label="ID Number"
                     value={formData.idNumber}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
+                    required
                     className="text-field"
                   />
                 </Grid>
@@ -147,8 +188,9 @@ export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
                     name="phoneNumber"
                     label="Phone Number"
                     value={formData.phoneNumber}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
+                    required
                     className="text-field"
                   />
                 </Grid>
@@ -157,8 +199,9 @@ export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
                     name="communityName"
                     label="Community Name"
                     value={formData.communityName}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
+                    required
                     className="text-field"
                   />
                 </Grid>
@@ -176,8 +219,9 @@ export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
                     name="landSize"
                     label="Land Size (acres)"
                     value={formData.landSize}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
+                    required
                     className="text-field"
                   />
                 </Grid>
@@ -186,8 +230,9 @@ export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
                     name="sublocation"
                     label="Sublocation"
                     value={formData.sublocation}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
+                    required
                     className="text-field"
                   />
                 </Grid>
@@ -196,8 +241,9 @@ export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
                     name="location"
                     label="Location"
                     value={formData.location}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
+                    required
                     className="text-field"
                   />
                 </Grid>
@@ -215,8 +261,9 @@ export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
                     name="fieldCoordinator"
                     label="Field Coordinator"
                     value={formData.fieldCoordinator}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
+                    required
                     className="text-field"
                   />
                 </Grid>
@@ -225,8 +272,9 @@ export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
                     name="witnessLocal"
                     label="Local Witness"
                     value={formData.witnessLocal}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
+                    required
                     className="text-field"
                   />
                 </Grid>
@@ -235,8 +283,9 @@ export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
                     name="signedLocal"
                     label="Signed (Local)"
                     value={formData.signedLocal}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
+                    required
                     className="text-field"
                   />
                 </Grid>
@@ -245,8 +294,9 @@ export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
                     name="signedOrg"
                     label="Signed (Org)"
                     value={formData.signedOrg}
-                    onChange={handleFormChange}
+                    onChange={onFormChange}
                     fullWidth
+                    required
                     className="text-field"
                   />
                 </Grid>
@@ -255,15 +305,15 @@ export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
                     label="Date Signed"
                     value={formData.dateSigned}
                     onChange={(newValue) =>
-                      setFormData((prevData) => ({
-                        ...prevData,
-                        dateSigned: newValue || null, // Ensure newValue is a dayjs object or null
-                      }))
+                      onFormChange({
+                        target: { name: "dateSigned", value: newValue || null },
+                      } as React.ChangeEvent<HTMLInputElement>)
                     }
                     renderInput={(params) => (
                       <TextField
                         {...params}
                         fullWidth
+                        required
                         className="date-picker"
                       />
                     )}
@@ -320,8 +370,12 @@ export default function AddFormDialog({ open, onClose }: AddFormDialogProps) {
         <Button onClick={onClose} className="cancel-button">
           Cancel
         </Button>
-        <Button onClick={handleSubmit} className="submit-button">
-          Add Record
+        <Button
+          onClick={handleSubmit}
+          className="submit-button"
+          variant="contained"
+        >
+          {isEditMode ? "Save Changes" : "Add Record"}
         </Button>
       </DialogActions>
     </Dialog>

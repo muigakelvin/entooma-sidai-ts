@@ -84,7 +84,7 @@ export default function RepresentativeForm({
         titleNumber: "",
       },
     ],
-    source: "Other", // Default source value
+    source: "RepresentativeForm", // Default source value
   });
 
   const [members, setMembers] = React.useState<Member[]>(formData.members);

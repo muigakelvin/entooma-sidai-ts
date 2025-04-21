@@ -279,7 +279,9 @@ export default function DataTable() {
           representativeName: rowToEdit.representativeName || "",
           representativeIdNumber: rowToEdit.representativeIdNumber || "",
           representativePhone: rowToEdit.representativePhone || "",
-          landSize: rowToEdit.landSize.replace(" acres", "") || "",
+          landSize: rowToEdit.landSize
+            ? rowToEdit.landSize.replace(" acres", "")
+            : "",
           communityName: rowToEdit.communityName || "",
           groupName: rowToEdit.groupName || "",
           sublocation: rowToEdit.sublocation || "",
@@ -303,7 +305,9 @@ export default function DataTable() {
           communityMember: rowToEdit.communityMember || "",
           idNumber: rowToEdit.idNumber || "",
           phoneNumber: rowToEdit.phoneNumber || "",
-          landSize: rowToEdit.landSize.replace(" acres", "") || "",
+          landSize: rowToEdit.landSize
+            ? rowToEdit.landSize.replace(" acres", "")
+            : "",
           communityName: rowToEdit.communityName || "",
           groupName: rowToEdit.groupName || "",
           sublocation: rowToEdit.sublocation || "",

@@ -75,13 +75,11 @@ export default function DataTable() {
   const [filters, setFilters] = React.useState<Record<string, any>>({});
   const [isFilterPanelOpen, setIsFilterPanelOpen] =
     React.useState<boolean>(false);
-  const API_BASE_URL = "http://localhost:8080/api/forms";
 
-  // Debugging state updates
-  React.useEffect(() => {
-    console.log("isRepresentativeFormOpen:", isRepresentativeFormOpen);
-    console.log("isFormOpen:", isFormOpen);
-  }, [isRepresentativeFormOpen, isFormOpen]);
+  // New State for Search Term
+  const [searchTerm, setSearchTerm] = React.useState<string>("");
+
+  const API_BASE_URL = "http://localhost:8080/api/forms";
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -108,6 +106,22 @@ export default function DataTable() {
     };
     fetchData();
   }, []);
+
+  // Function to handle search
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const term = event.target.value.toLowerCase();
+    setSearchTerm(term);
+
+    // Apply search filter
+    const filtered = rows.filter((row) =>
+      Object.values(row).some(
+        (value) =>
+          typeof value === "string" && value.toLowerCase().includes(term)
+      )
+    );
+
+    setFilteredRows(filtered);
+  };
 
   const columns = [
     { id: "communityMember", label: "Community Member" },
@@ -275,10 +289,8 @@ export default function DataTable() {
       const rowToEdit = response.data.data; // Access the nested `data` property
       console.log("Server Response for Edit:", rowToEdit); // Debugging the full response
       console.log("Source Field:", rowToEdit.source); // Debugging the source field
-
       const source = rowToEdit.source?.trim() || "Other"; // Safeguard against undefined source
       console.log("Resolved Source:", source);
-
       if (source === "RepresentativeForm") {
         setFormData({
           id: rowToEdit.id,
@@ -355,6 +367,8 @@ export default function DataTable() {
           label="Search"
           variant="outlined"
           size="small"
+          value={searchTerm}
+          onChange={handleSearch}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">

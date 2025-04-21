@@ -265,7 +265,6 @@ export default function DataTable() {
       console.error("Error submitting form:", error);
     }
   };
-
   const handleEdit = async (id: number) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/${id}`);
@@ -273,6 +272,7 @@ export default function DataTable() {
         throw new Error("Invalid response from server.");
       }
       const rowToEdit = response.data;
+
       if (rowToEdit.source === "RepresentativeForm") {
         setFormData({
           id: rowToEdit.id,
@@ -295,7 +295,7 @@ export default function DataTable() {
           loiDocument: rowToEdit.loiDocument || "",
           mouDocument: rowToEdit.mouDocument || "",
           source: "RepresentativeForm",
-          members: rowToEdit.members || [],
+          members: rowToEdit.members || [], // Ensure members are populated
         });
         setIsRepresentativeFormOpen(true);
         setIsFormOpen(false);
@@ -309,7 +309,6 @@ export default function DataTable() {
             ? rowToEdit.landSize.replace(" acres", "")
             : "",
           communityName: rowToEdit.communityName || "",
-          groupName: rowToEdit.groupName || "",
           sublocation: rowToEdit.sublocation || "",
           location: rowToEdit.location || "",
           gisDetails: rowToEdit.gisDetails || "",
@@ -321,7 +320,7 @@ export default function DataTable() {
           loiDocument: rowToEdit.loiDocument || "",
           mouDocument: rowToEdit.mouDocument || "",
           source: "Other",
-          members: rowToEdit.members || [],
+          members: [], // No members for "Other" source
         });
         setIsFormOpen(true);
         setIsRepresentativeFormOpen(false);

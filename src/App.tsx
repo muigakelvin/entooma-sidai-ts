@@ -1,5 +1,4 @@
-// src/App.tsx
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import CardComponent from "./components/Card";
@@ -11,7 +10,7 @@ import "./index.css";
 // Define types for card data
 interface CardData {
   title: string;
-  value: string;
+  value: string | number; // Value can be a string or number
   change: number | string; // Change can be a number or string (e.g., "20")
   subtitle: string;
 }
@@ -50,22 +49,123 @@ interface TableRow {
 }
 
 const App: React.FC = () => {
+  // State for each card's data
+  const [totalLandOwners, setTotalLandOwners] = useState<number | null>(null);
+  const [totalLandSize, setTotalLandSize] = useState<number | null>(null);
+  const [uniqueSubcounties, setUniqueSubcounties] = useState<number | null>(
+    null
+  );
+  const [uniqueCounties, setUniqueCounties] = useState<number | null>(null);
+  const [loading, setLoading] = useState<boolean>(true); // Add a loading state
+
+  // Fetch total land owners
+  const fetchTotalLandOwners = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:8080/api/forms/total-land-owners"
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const text = await response.text(); // Get raw response
+      console.log("Raw response for total land owners:", text); // Log raw response
+      const data = JSON.parse(text); // Parse JSON
+      setTotalLandOwners(data.totalLandOwners);
+    } catch (error) {
+      console.error("Error fetching total land owners:", error);
+    }
+  };
+
+  // Fetch total land size
+  const fetchTotalLandSize = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:8080/api/forms/total-land-size"
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const text = await response.text(); // Get raw response
+      console.log("Raw response for total land size:", text); // Log raw response
+      const data = JSON.parse(text); // Parse JSON
+      setTotalLandSize(data.totalLandSize);
+    } catch (error) {
+      console.error("Error fetching total land size:", error);
+    }
+  };
+
+  // Fetch unique subcounties
+  const fetchUniqueSubcounties = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:8080/api/forms/unique-subcounties"
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const text = await response.text(); // Get raw response
+      console.log("Raw response for unique subcounties:", text); // Log raw response
+      const data = JSON.parse(text); // Parse JSON
+      setUniqueSubcounties(data.uniqueSubcounties);
+    } catch (error) {
+      console.error("Error fetching unique subcounties:", error);
+    }
+  };
+
+  // Fetch unique counties
+  const fetchUniqueCounties = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:8080/api/forms/unique-counties"
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const text = await response.text(); // Get raw response
+      console.log("Raw response for unique counties:", text); // Log raw response
+      const data = JSON.parse(text); // Parse JSON
+      setUniqueCounties(data.uniqueCounties);
+    } catch (error) {
+      console.error("Error fetching unique counties:", error);
+    } finally {
+      setLoading(false); // Mark loading as complete
+    }
+  };
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchTotalLandOwners();
+    fetchTotalLandSize();
+    fetchUniqueSubcounties();
+    fetchUniqueCounties();
+  }, []); // Empty dependency array ensures this runs only once
+
   // Cards data
   const cardsData: CardData[] = [
-    { title: "LandOwners", value: "14k", change: 25, subtitle: "Last 30 days" },
+    {
+      title: "LandOwners",
+      value: loading ? "Loading..." : totalLandOwners?.toString() || "N/A",
+      change: 25,
+      subtitle: "Last 30 days",
+    },
     {
       title: "Registered LandSize",
-      value: "325",
+      value: loading ? "Loading..." : totalLandSize?.toString() || "N/A",
       change: -25,
       subtitle: "Last 30 days",
     },
     {
       title: "Subcounties",
-      value: "200",
+      value: loading ? "Loading..." : uniqueSubcounties?.toString() || "N/A",
       change: 5,
       subtitle: "Last 30 days",
     },
-    { title: "Counties", value: "50", change: "20", subtitle: "Last 30 days" },
+    {
+      title: "Counties",
+      value: loading ? "Loading..." : uniqueCounties?.toString() || "N/A",
+      change: "20",
+      subtitle: "Last 30 days",
+    },
   ];
 
   // Map data

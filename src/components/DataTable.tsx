@@ -77,16 +77,19 @@ export default function DataTable() {
     React.useState<boolean>(false);
   const API_BASE_URL = "http://localhost:8080/api/forms";
 
+  // Debugging state updates
+  React.useEffect(() => {
+    console.log("isRepresentativeFormOpen:", isRepresentativeFormOpen);
+    console.log("isFormOpen:", isFormOpen);
+  }, [isRepresentativeFormOpen, isFormOpen]);
+
   React.useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/all`);
-        // Ensure the response contains valid data
         if (!response || !response.data || !Array.isArray(response.data.data)) {
           throw new Error("Invalid or missing data from server.");
         }
-
-        // Correctly access the nested `data` property
         const processedData = response.data.data.map((row: RowData) =>
           row.source === "RepresentativeForm"
             ? {
@@ -97,15 +100,12 @@ export default function DataTable() {
               }
             : row
         );
-
-        // Update state with processed data
         setRows(processedData);
         setFilteredRows(processedData);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
     };
-
     fetchData();
   }, []);
 
@@ -265,15 +265,21 @@ export default function DataTable() {
       console.error("Error submitting form:", error);
     }
   };
+
   const handleEdit = async (id: number) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/${id}`);
-      if (!response || !response.data) {
-        throw new Error("Invalid response from server.");
+      if (!response || !response.data || !response.data.data) {
+        throw new Error("Invalid or missing data from server.");
       }
-      const rowToEdit = response.data;
+      const rowToEdit = response.data.data; // Access the nested `data` property
+      console.log("Server Response for Edit:", rowToEdit); // Debugging the full response
+      console.log("Source Field:", rowToEdit.source); // Debugging the source field
 
-      if (rowToEdit.source === "RepresentativeForm") {
+      const source = rowToEdit.source?.trim() || "Other"; // Safeguard against undefined source
+      console.log("Resolved Source:", source);
+
+      if (source === "RepresentativeForm") {
         setFormData({
           id: rowToEdit.id,
           representativeName: rowToEdit.representativeName || "",

@@ -12,7 +12,12 @@ interface CardProps {
   subtitle: string;
 }
 
-const CardComponent: React.FC<CardProps> = ({ title, value, change, subtitle }) => {
+const CardComponent: React.FC<CardProps> = ({
+  title,
+  value,
+  change,
+  subtitle,
+}) => {
   const icon = change > 0 ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />;
   const chipColor = change > 0 ? "success" : "error";
 

@@ -29,22 +29,22 @@ import AddIcon from "@mui/icons-material/Add";
 import { DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import dayjs, { Dayjs } from "dayjs"; // Import dayjs for date handling
-import axios from "axios"; // Import Axios for HTTP requests
-import AddFormDialog from "./AddFormDialog"; // Import the AddFormDialog component
-import RepresentativeForm from "./RepresentativeForm"; // Import the RepresentativeForm component
-import FilterPanel from "./FilterPanel"; // Import the FilterPanel component
+import dayjs, { Dayjs } from "dayjs";
+import axios from "axios";
+import AddFormDialog from "./AddFormDialog";
+import RepresentativeForm from "./RepresentativeForm";
+import FilterPanel from "./FilterPanel";
 import "../index.css";
 
-// Define types for the row data
 interface Member {
   memberName: string;
   memberPhoneNumber: string;
   memberIdNumber: string;
   titleNumber: string;
 }
+
 interface RowData {
-  id: number;
+  id?: number | null;
   communityMember: string;
   idNumber: string;
   phoneNumber: string;
@@ -53,7 +53,7 @@ interface RowData {
   sublocation: string;
   location: string;
   fieldCoordinator: string;
-  dateSigned: Dayjs | null; // Change type to Dayjs | null
+  dateSigned: Dayjs | null;
   signedLocal: string;
   signedOrg: string;
   witnessLocal: string;
@@ -61,8 +61,8 @@ interface RowData {
   mouDocument: string;
   source: "Other" | "RepresentativeForm";
   members: Member[];
-  groupName?: string; // Optional for Individual rows
-  gisDetails?: string; // Optional
+  groupName?: string;
+  gisDetails?: string;
 }
 
 export default function DataTable() {
@@ -71,34 +71,41 @@ export default function DataTable() {
   const [filteredRows, setFilteredRows] = React.useState<RowData[]>([]);
   const [isFormOpen, setIsFormOpen] = React.useState<boolean>(false);
   const [isRepresentativeFormOpen, setIsRepresentativeFormOpen] =
-    React.useState<boolean>(false); // State for Representative Form
+    React.useState<boolean>(false);
   const [filters, setFilters] = React.useState<Record<string, any>>({});
   const [isFilterPanelOpen, setIsFilterPanelOpen] =
     React.useState<boolean>(false);
-  const API_BASE_URL = "http://localhost:8080/api/forms"; // Backend API base URL
+  const API_BASE_URL = "http://localhost:8080/api/forms";
 
-  // Fetch data from the backend on component mount
   React.useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/all`);
-        const processedData = response.data.map((row: RowData) => {
-          if (row.source === "RepresentativeForm") {
-            return {
-              ...row,
-              communityMember: row.communityMember || row.representativeName,
-              idNumber: row.idNumber || row.representativeIdNumber,
-              phoneNumber: row.phoneNumber || row.representativePhone,
-            };
-          }
-          return row;
-        });
+        // Ensure the response contains valid data
+        if (!response || !response.data || !Array.isArray(response.data.data)) {
+          throw new Error("Invalid or missing data from server.");
+        }
+
+        // Correctly access the nested `data` property
+        const processedData = response.data.data.map((row: RowData) =>
+          row.source === "RepresentativeForm"
+            ? {
+                ...row,
+                communityMember: row.communityMember || row.representativeName,
+                idNumber: row.idNumber || row.representativeIdNumber,
+                phoneNumber: row.phoneNumber || row.representativePhone,
+              }
+            : row
+        );
+
+        // Update state with processed data
         setRows(processedData);
         setFilteredRows(processedData);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
     };
+
     fetchData();
   }, []);
 
@@ -138,7 +145,7 @@ export default function DataTable() {
   };
 
   const initialIndividualFormData: RowData = {
-    id: null as unknown as number,
+    id: null,
     communityMember: "",
     idNumber: "",
     phoneNumber: "",
@@ -226,53 +233,55 @@ export default function DataTable() {
           submittedData
         );
       }
+      if (!response || !response.data) {
+        throw new Error("Invalid response from server.");
+      }
       const newRow = response.data;
-
-      // Update rows and filteredRows states
+      const processedNewRow =
+        newRow.source === "RepresentativeForm"
+          ? {
+              ...newRow,
+              communityMember:
+                newRow.communityMember || newRow.representativeName,
+              idNumber: newRow.idNumber || newRow.representativeIdNumber,
+              phoneNumber: newRow.phoneNumber || newRow.representativePhone,
+            }
+          : newRow;
       if (submittedData.id) {
         const updatedRows = rows.map((row) =>
-          row.id === submittedData.id ? newRow : row
+          row.id === submittedData.id ? processedNewRow : row
         );
         setRows(updatedRows);
         setFilteredRows(updatedRows);
       } else {
-        // Preprocess the new row if it's a RepresentativeForm record
-        const processedNewRow =
-          newRow.source === "RepresentativeForm"
-            ? {
-                ...newRow,
-                communityMember:
-                  newRow.communityMember || newRow.representativeName,
-                idNumber: newRow.idNumber || newRow.representativeIdNumber,
-                phoneNumber: newRow.phoneNumber || newRow.representativePhone,
-              }
-            : newRow;
-
-        // Add the new row to both rows and filteredRows
         setRows((prevRows) => [...prevRows, processedNewRow]);
         setFilteredRows((prevFilteredRows) => [
           ...prevFilteredRows,
           processedNewRow,
         ]);
       }
-
       handleCloseForm();
     } catch (error) {
       console.error("Error submitting form:", error);
     }
   };
-
   const handleEdit = async (id: number) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/${id}`);
+      if (!response || !response.data) {
+        throw new Error("Invalid response from server.");
+      }
       const rowToEdit = response.data;
+
       if (rowToEdit.source === "RepresentativeForm") {
         setFormData({
           id: rowToEdit.id,
           representativeName: rowToEdit.representativeName || "",
           representativeIdNumber: rowToEdit.representativeIdNumber || "",
           representativePhone: rowToEdit.representativePhone || "",
-          landSize: rowToEdit.landSize.replace(" acres", "") || "",
+          landSize: rowToEdit.landSize
+            ? rowToEdit.landSize.replace(" acres", "")
+            : "",
           communityName: rowToEdit.communityName || "",
           groupName: rowToEdit.groupName || "",
           sublocation: rowToEdit.sublocation || "",
@@ -286,7 +295,7 @@ export default function DataTable() {
           loiDocument: rowToEdit.loiDocument || "",
           mouDocument: rowToEdit.mouDocument || "",
           source: "RepresentativeForm",
-          members: rowToEdit.members || [],
+          members: rowToEdit.members || [], // Ensure members are populated
         });
         setIsRepresentativeFormOpen(true);
         setIsFormOpen(false);
@@ -296,9 +305,10 @@ export default function DataTable() {
           communityMember: rowToEdit.communityMember || "",
           idNumber: rowToEdit.idNumber || "",
           phoneNumber: rowToEdit.phoneNumber || "",
-          landSize: rowToEdit.landSize.replace(" acres", "") || "",
+          landSize: rowToEdit.landSize
+            ? rowToEdit.landSize.replace(" acres", "")
+            : "",
           communityName: rowToEdit.communityName || "",
-          groupName: rowToEdit.groupName || "",
           sublocation: rowToEdit.sublocation || "",
           location: rowToEdit.location || "",
           gisDetails: rowToEdit.gisDetails || "",
@@ -310,7 +320,7 @@ export default function DataTable() {
           loiDocument: rowToEdit.loiDocument || "",
           mouDocument: rowToEdit.mouDocument || "",
           source: "Other",
-          members: rowToEdit.members || [],
+          members: [], // No members for "Other" source
         });
         setIsFormOpen(true);
         setIsRepresentativeFormOpen(false);
@@ -667,6 +677,30 @@ export default function DataTable() {
           formData={formData}
           onFormChange={handleFormChange}
           onSubmit={handleSubmit}
+          onFormSubmitSuccess={(response) => {
+            if (!response || !response.data) {
+              alert("Invalid response from server.");
+              return;
+            }
+            const newRow = response.data;
+            const processedNewRow =
+              newRow.source === "RepresentativeForm"
+                ? {
+                    ...newRow,
+                    communityMember:
+                      newRow.communityMember || newRow.representativeName,
+                    idNumber: newRow.idNumber || newRow.representativeIdNumber,
+                    phoneNumber:
+                      newRow.phoneNumber || newRow.representativePhone,
+                  }
+                : newRow;
+            setRows((prevRows) => [...prevRows, processedNewRow]);
+            setFilteredRows((prevFilteredRows) => [
+              ...prevFilteredRows,
+              processedNewRow,
+            ]);
+            alert("Record added successfully!");
+          }}
           isEditMode={!!formData.id}
         />
       )}
@@ -685,6 +719,30 @@ export default function DataTable() {
             });
           }}
           onSubmit={handleSubmit}
+          onFormSubmitSuccess={(response) => {
+            if (!response || !response.data) {
+              alert("Invalid response from server.");
+              return;
+            }
+            const newRow = response.data;
+            const processedNewRow =
+              newRow.source === "RepresentativeForm"
+                ? {
+                    ...newRow,
+                    communityMember:
+                      newRow.communityMember || newRow.representativeName,
+                    idNumber: newRow.idNumber || newRow.representativeIdNumber,
+                    phoneNumber:
+                      newRow.phoneNumber || newRow.representativePhone,
+                  }
+                : newRow;
+            setRows((prevRows) => [...prevRows, processedNewRow]);
+            setFilteredRows((prevFilteredRows) => [
+              ...prevFilteredRows,
+              processedNewRow,
+            ]);
+            alert("Record added successfully!");
+          }}
         />
       )}
     </Box>

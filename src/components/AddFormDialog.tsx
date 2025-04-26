@@ -1,4 +1,3 @@
-// src/components/AddFormDialog.tsx
 import React from "react";
 import {
   Dialog,
@@ -34,9 +33,9 @@ interface FormData {
   signedLocal: string;
   signedOrg: string;
   dateSigned: Dayjs | null; // Date as a Dayjs object or null
-  loiDocument: string | null; // Base64 string
-  mouDocument: string | null; // Base64 string
-  gisDetails: string | null; // Base64 string
+  loiDocument: File | null; // File object
+  mouDocument: File | null; // File object
+  gisDetails: File | null; // File object
   source: string; // Add the source field
 }
 
@@ -58,19 +57,14 @@ export default function AddFormDialog({
   onFormChange,
   isEditMode,
 }: AddFormDialogProps) {
-  // Handle file uploads and convert to base64
+  // Handle file uploads
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        const fieldName = event.target.name;
-        onFormChange({
-          target: { name: fieldName, value: base64String },
-        } as React.ChangeEvent<HTMLInputElement>);
-      };
-      reader.readAsDataURL(file);
+      const fieldName = event.target.name;
+      onFormChange({
+        target: { name: fieldName, value: file },
+      } as React.ChangeEvent<HTMLInputElement>);
     }
   };
 
@@ -89,11 +83,9 @@ export default function AddFormDialog({
       "signedLocal",
       "signedOrg",
     ];
-
     const missingFields = requiredFields.filter(
       (field) => !formData[field as keyof FormData]
     );
-
     if (missingFields.length > 0) {
       alert(
         `Please fill out the following required fields: ${missingFields.join(
@@ -102,12 +94,10 @@ export default function AddFormDialog({
       );
       return false;
     }
-
     if (!formData.dateSigned) {
       alert("Please select a valid date for 'Date Signed'.");
       return false;
     }
-
     return true;
   };
 
@@ -117,17 +107,37 @@ export default function AddFormDialog({
       // Validate the form data
       if (!validateForm()) return;
 
-      // Format the payload to match the backend's expectations
-      const payload: FormData = {
-        ...formData,
-        dateSigned: formData.dateSigned?.format("YYYY-MM-DD") || null, // Format date as YYYY-MM-DD or send null
-        source: formData.source || "Other", // Default source to "Other"
-      };
+      // Create FormData object
+      const formDataToSend = new FormData();
 
-      console.log("Sending payload to backend:", payload); // Log the payload
+      // Serialize non-file fields into a JSON string
+      const jsonData = {
+        communityMember: formData.communityMember,
+        idNumber: formData.idNumber,
+        phoneNumber: formData.phoneNumber,
+        communityName: formData.communityName,
+        landSize: formData.landSize,
+        sublocation: formData.sublocation,
+        location: formData.location,
+        fieldCoordinator: formData.fieldCoordinator,
+        witnessLocal: formData.witnessLocal,
+        signedLocal: formData.signedLocal,
+        signedOrg: formData.signedOrg,
+        dateSigned: formData.dateSigned?.format("YYYY-MM-DD"),
+        source: formData.source || "", // Default to empty string if not provided
+      };
+      formDataToSend.append("data", JSON.stringify(jsonData));
+
+      // Append files
+      if (formData.loiDocument)
+        formDataToSend.append("loiDocument", formData.loiDocument);
+      if (formData.mouDocument)
+        formDataToSend.append("mouDocument", formData.mouDocument);
+      if (formData.gisDetails)
+        formDataToSend.append("gisDetails", formData.gisDetails);
 
       // Submit the payload to the backend
-      const response = await submitAddFormDialog(payload);
+      const response = await submitAddFormDialog(formDataToSend);
 
       // Validate the response
       if (!response || !response.data) {
@@ -207,7 +217,6 @@ export default function AddFormDialog({
                 </Grid>
               </Grid>
             </Box>
-
             {/* Land Details Section */}
             <Box className="section-box">
               <Typography variant="h6" className="section-header">
@@ -249,7 +258,6 @@ export default function AddFormDialog({
                 </Grid>
               </Grid>
             </Box>
-
             {/* Authorized Signatories Section */}
             <Box className="section-box">
               <Typography variant="h6" className="section-header">
@@ -321,7 +329,6 @@ export default function AddFormDialog({
                 </Grid>
               </Grid>
             </Box>
-
             {/* Documents and GIS Information Section */}
             <Box className="section-box">
               <Typography variant="h6" className="section-header">

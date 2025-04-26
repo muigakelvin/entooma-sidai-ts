@@ -43,9 +43,9 @@ interface FormData {
   signedLocal: string;
   signedOrg: string;
   dateSigned: Dayjs | null;
-  loiDocument: string | null;
-  mouDocument: string | null;
-  gisDetails: string | null;
+  loiDocument: File | null; // Changed to File type for file uploads
+  mouDocument: File | null; // Changed to File type for file uploads
+  gisDetails: File | null; // Changed to File type for file uploads
   members: Member[];
   source: string;
 }
@@ -111,49 +111,55 @@ export default function RepresentativeForm({
   };
 
   const handleSubmit = async () => {
-    if (!validateMembers()) return;
     try {
-      const payload = {
-        ...formData,
+      // Validate form data
+      if (!validateMembers()) return;
+
+      // Create FormData object
+      const formDataToSend = new FormData();
+
+      // Serialize non-file fields into a JSON string
+      const jsonData = {
+        groupName: formData.groupName,
+        representativeName: formData.representativeName,
+        representativeIdNumber: formData.representativeIdNumber,
+        representativePhone: formData.representativePhone,
+        communityName: formData.communityName,
+        landSize: formData.landSize,
+        sublocation: formData.sublocation,
+        location: formData.location,
+        fieldCoordinator: formData.fieldCoordinator,
+        witnessLocal: formData.witnessLocal,
+        signedLocal: formData.signedLocal,
+        signedOrg: formData.signedOrg,
         dateSigned: formData.dateSigned?.format("YYYY-MM-DD"),
-        members,
+        source: formData.source,
+        members: members, // Include group members in the JSON payload
       };
-      console.log("Sending payload to backend:", payload);
-      const response = await submitRepresentativeForm(payload);
+      formDataToSend.append("data", JSON.stringify(jsonData)); // Append JSON string under 'data' key
+
+      // Append files
+      if (formData.loiDocument)
+        formDataToSend.append("loiDocument", formData.loiDocument);
+      if (formData.mouDocument)
+        formDataToSend.append("mouDocument", formData.mouDocument);
+      if (formData.gisDetails)
+        formDataToSend.append("gisDetails", formData.gisDetails);
+
+      // Submit the payload to the backend
+      console.log("Sending payload to backend:", formDataToSend);
+      const response = await submitRepresentativeForm(formDataToSend);
+
+      // Invoke the success callback with the backend response
       if (onFormSubmitSuccess) {
         onFormSubmitSuccess(response);
       }
+
       alert("Form submitted successfully!");
-      onClose();
+      onClose(); // Close the dialog after submission
     } catch (error) {
       console.error("Failed to submit form:", error);
       alert("An error occurred while submitting the form.");
-    }
-  };
-
-  // File handling functions
-  const convertFileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      try {
-        const base64 = await convertFileToBase64(file);
-        onFileChange({
-          ...e,
-          target: { ...e.target, value: base64 },
-        } as React.ChangeEvent<HTMLInputElement>);
-      } catch (error) {
-        console.error("Error converting file to Base64:", error);
-        alert("An error occurred while processing the file.");
-      }
     }
   };
 
@@ -422,7 +428,7 @@ export default function RepresentativeForm({
                     name="loiDocument"
                     label="Upload LOI Document (.pdf)"
                     inputProps={{ accept: ".pdf" }}
-                    onChange={handleFileChange}
+                    onChange={onFileChange}
                     fullWidth
                     className="file-upload"
                   />
@@ -433,7 +439,7 @@ export default function RepresentativeForm({
                     name="mouDocument"
                     label="Upload MOU Document (.pdf)"
                     inputProps={{ accept: ".pdf" }}
-                    onChange={handleFileChange}
+                    onChange={onFileChange}
                     fullWidth
                     className="file-upload"
                   />
@@ -444,7 +450,7 @@ export default function RepresentativeForm({
                     name="gisDetails"
                     label="Upload GIS File (.gpx, .kml)"
                     inputProps={{ accept: ".gpx,.kml" }}
-                    onChange={handleFileChange}
+                    onChange={onFileChange}
                     fullWidth
                     className="file-upload"
                   />

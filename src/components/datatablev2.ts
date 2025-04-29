@@ -1,3 +1,4 @@
+// src/components/DataTable.tsx
 import * as React from "react";
 import {
   Table,
@@ -77,7 +78,6 @@ export default function DataTable() {
   const [searchTerm, setSearchTerm] = React.useState<string>("");
   const API_BASE_URL = "http://localhost:8080/api/forms";
 
-  // Fetch initial data
   React.useEffect(() => {
     const fetchData = async () => {
       try {
@@ -104,23 +104,6 @@ export default function DataTable() {
     fetchData();
   }, []);
 
-  // Debugging: Check for duplicate IDs in rows
-  React.useEffect(() => {
-    const uniqueIds = new Set(rows.map((row) => row.id));
-    if (uniqueIds.size !== rows.length) {
-      console.error("Duplicate IDs detected in rows:", rows);
-    }
-  }, [rows]);
-
-  // Debugging: Check for duplicate IDs in filteredRows
-  React.useEffect(() => {
-    const uniqueIds = new Set(filteredRows.map((row) => row.id));
-    if (uniqueIds.size !== filteredRows.length) {
-      console.error("Duplicate IDs detected in filteredRows:", filteredRows);
-    }
-  }, [filteredRows]);
-
-  // Handle search input
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const term = event.target.value.toLowerCase();
     setSearchTerm(term);
@@ -133,7 +116,6 @@ export default function DataTable() {
     setFilteredRows(filtered);
   };
 
-  // Columns for filtering
   const columns = [
     { id: "communityMember", label: "Community Member" },
     { id: "idNumber", label: "ID Number" },
@@ -152,7 +134,6 @@ export default function DataTable() {
     { id: "gisDetails", label: "GIS Details" },
   ];
 
-  // Apply filters
   const handleApplyFilters = (appliedFilters: Record<string, any>) => {
     setFilters(appliedFilters);
     const filtered = rows.filter((row) =>
@@ -165,13 +146,11 @@ export default function DataTable() {
     setFilteredRows(filtered);
   };
 
-  // Reset filters
   const handleResetFilters = () => {
     setFilters({});
     setFilteredRows(rows);
   };
 
-  // Initial form data
   const initialIndividualFormData: RowData = {
     id: null,
     communityMember: "",
@@ -203,12 +182,10 @@ export default function DataTable() {
     initialIndividualFormData
   );
 
-  // Expand/Collapse row details
   const handleExpand = (id: number) => {
     setExpandedRow(expandedRow === id ? null : id);
   };
 
-  // Open form dialog
   const handleOpenForm = (formType: "individual" | "representative") => {
     if (formType === "representative") {
       setIsRepresentativeFormOpen(true);
@@ -221,7 +198,6 @@ export default function DataTable() {
     }
   };
 
-  // Close form dialog
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setIsRepresentativeFormOpen(false);
@@ -232,7 +208,6 @@ export default function DataTable() {
     );
   };
 
-  // Handle form input changes
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (name === "dateSigned") {
@@ -249,7 +224,6 @@ export default function DataTable() {
     }
   };
 
-  // Submit form data
   const handleSubmit = async (submittedData: RowData) => {
     try {
       let response;
@@ -285,16 +259,11 @@ export default function DataTable() {
 
       if (submittedData.id) {
         // Update the existing record in the state
-        setRows((prevRows) =>
-          prevRows.map((row) =>
-            row.id === submittedData.id ? processedNewRow : row
-          )
+        const updatedRows = rows.map((row) =>
+          row.id === submittedData.id ? processedNewRow : row
         );
-        setFilteredRows((prevFilteredRows) =>
-          prevFilteredRows.map((row) =>
-            row.id === submittedData.id ? processedNewRow : row
-          )
-        );
+        setRows(updatedRows);
+        setFilteredRows(updatedRows);
       } else {
         // Add the new record to the state
         setRows((prevRows) => [...prevRows, processedNewRow]);
@@ -303,18 +272,12 @@ export default function DataTable() {
           processedNewRow,
         ]);
       }
-      alert(
-        submittedData.id
-          ? "Record updated successfully!"
-          : "Record added successfully!"
-      );
+      handleCloseForm();
     } catch (error) {
       console.error("Error submitting form:", error);
-      alert("An error occurred while submitting the form.");
     }
   };
 
-  // Edit record
   const handleEdit = async (id: number) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/${id}`);
@@ -325,7 +288,7 @@ export default function DataTable() {
       const source = rowToEdit.source?.trim() || "Other";
       if (source === "RepresentativeForm") {
         setFormData({
-          id: rowToEdit.id,
+          id: rowToEdit.id, // Ensure this is set correctly
           representativeName: rowToEdit.representativeName || "",
           representativeIdNumber: rowToEdit.representativeIdNumber || "",
           representativePhone: rowToEdit.representativePhone || "",
@@ -351,7 +314,7 @@ export default function DataTable() {
         setIsFormOpen(false);
       } else {
         setFormData({
-          id: rowToEdit.id,
+          id: rowToEdit.id, // Ensure this is set correctly
           communityMember: rowToEdit.communityMember || "",
           idNumber: rowToEdit.idNumber || "",
           phoneNumber: rowToEdit.phoneNumber || "",
@@ -380,7 +343,6 @@ export default function DataTable() {
     }
   };
 
-  // Delete record
   const handleDelete = async (id: number) => {
     try {
       await axios.delete(`${API_BASE_URL}/${id}`);
@@ -747,29 +709,12 @@ export default function DataTable() {
                       newRow.phoneNumber || newRow.representativePhone,
                   }
                 : newRow;
-            if (formData.id) {
-              setRows((prevRows) =>
-                prevRows.map((row) =>
-                  row.id === formData.id ? processedNewRow : row
-                )
-              );
-              setFilteredRows((prevFilteredRows) =>
-                prevFilteredRows.map((row) =>
-                  row.id === formData.id ? processedNewRow : row
-                )
-              );
-            } else {
-              setRows((prevRows) => [...prevRows, processedNewRow]);
-              setFilteredRows((prevFilteredRows) => [
-                ...prevFilteredRows,
-                processedNewRow,
-              ]);
-            }
-            alert(
-              formData.id
-                ? "Record updated successfully!"
-                : "Record added successfully!"
-            );
+            setRows((prevRows) => [...prevRows, processedNewRow]);
+            setFilteredRows((prevFilteredRows) => [
+              ...prevFilteredRows,
+              processedNewRow,
+            ]);
+            alert("Record added successfully!");
           }}
           isEditMode={!!formData.id}
         />
@@ -806,31 +751,23 @@ export default function DataTable() {
                       newRow.phoneNumber || newRow.representativePhone,
                   }
                 : newRow;
-            if (formData.id) {
-              setRows((prevRows) =>
-                prevRows.map((row) =>
-                  row.id === formData.id ? processedNewRow : row
-                )
-              );
-              setFilteredRows((prevFilteredRows) =>
-                prevFilteredRows.map((row) =>
-                  row.id === formData.id ? processedNewRow : row
-                )
-              );
-            } else {
-              setRows((prevRows) => [...prevRows, processedNewRow]);
-              setFilteredRows((prevFilteredRows) => [
-                ...prevFilteredRows,
-                processedNewRow,
-              ]);
-            }
+            setRows((prevRows) =>
+              prevRows.map((row) =>
+                row.id === formData.id ? processedNewRow : row
+              )
+            );
+            setFilteredRows((prevFilteredRows) =>
+              prevFilteredRows.map((row) =>
+                row.id === formData.id ? processedNewRow : row
+              )
+            );
             alert(
               formData.id
                 ? "Record updated successfully!"
                 : "Record added successfully!"
             );
           }}
-          isEditMode={!!formData.id}
+          isEditMode={!!formData.id} // Pass isEditMode prop here
         />
       )}
     </Box>

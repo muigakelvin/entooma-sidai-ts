@@ -1,3 +1,4 @@
+// src/components/RepresentativeForm.tsx
 import React from "react";
 import {
   Dialog,
@@ -19,8 +20,9 @@ import AddIcon from "@mui/icons-material/Add";
 import dayjs, { Dayjs } from "dayjs";
 import {
   submitRepresentativeForm,
-  submitUpdateRepresentativeForm,
-} from "../services/apiService";
+  submitUpdateForm,
+} from "../services/apiService"; // Import update function
+import "../index.css";
 
 interface Member {
   memberIdNumber: string;
@@ -44,9 +46,9 @@ interface FormData {
   signedLocal: string;
   signedOrg: string;
   dateSigned: Dayjs | null;
-  loiDocument: File | null; // File object
-  mouDocument: File | null; // File object
-  gisDetails: File | null; // File object
+  loiDocument: File | null; // Changed to File type for file uploads
+  mouDocument: File | null; // Changed to File type for file uploads
+  gisDetails: File | null; // Changed to File type for file uploads
   members: Member[];
   source: string;
 }
@@ -74,7 +76,6 @@ export default function RepresentativeForm({
 }: RepresentativeFormProps) {
   const [members, setMembers] = React.useState<Member[]>(formData.members);
 
-  // Handle changes to group member fields
   const handleMemberChange = (
     index: number,
     field: keyof Member,
@@ -86,7 +87,6 @@ export default function RepresentativeForm({
     setMembers(updatedMembers);
   };
 
-  // Add a new member field
   const addMemberField = () => {
     setMembers([
       ...members,
@@ -99,13 +99,11 @@ export default function RepresentativeForm({
     ]);
   };
 
-  // Remove a member field
   const removeMemberField = (index: number) => {
     const updatedMembers = members.filter((_, i) => i !== index);
     setMembers(updatedMembers);
   };
 
-  // Validate group member fields
   const validateMembers = () => {
     const isValid = members.every(
       (member) => member.memberName && member.memberPhoneNumber
@@ -117,7 +115,6 @@ export default function RepresentativeForm({
     return true;
   };
 
-  // Handle form submission
   const handleSubmit = async () => {
     try {
       // Validate form data
@@ -128,27 +125,24 @@ export default function RepresentativeForm({
 
       // Serialize non-file fields into a JSON string
       const jsonData = {
-        id: formData.id, // Always include ID for updates
-        groupName: formData.groupName || "",
-        representativeName: formData.representativeName || "",
-        representativeIdNumber: formData.representativeIdNumber || "",
-        representativePhone: formData.representativePhone || "",
-        communityName: formData.communityName || "",
-        landSize: formData.landSize || "",
-        sublocation: formData.sublocation || "",
-        location: formData.location || "",
-        fieldCoordinator: formData.fieldCoordinator || "",
-        witnessLocal: formData.witnessLocal || "",
-        signedLocal: formData.signedLocal || "",
-        signedOrg: formData.signedOrg || "",
-        dateSigned: formData.dateSigned?.format("YYYY-MM-DD") || null,
-        source: formData.source || "Other", // Default to "Other" if not provided
+        id: formData.id, // Include the ID for updates
+        groupName: formData.groupName,
+        representativeName: formData.representativeName,
+        representativeIdNumber: formData.representativeIdNumber,
+        representativePhone: formData.representativePhone,
+        communityName: formData.communityName,
+        landSize: formData.landSize,
+        sublocation: formData.sublocation,
+        location: formData.location,
+        fieldCoordinator: formData.fieldCoordinator,
+        witnessLocal: formData.witnessLocal,
+        signedLocal: formData.signedLocal,
+        signedOrg: formData.signedOrg,
+        dateSigned: formData.dateSigned?.format("YYYY-MM-DD"),
+        source: formData.source,
         members: members, // Include group members in the JSON payload
       };
-
-      // Log the JSON payload for debugging
-      console.log("JSON payload:", jsonData);
-      formDataToSend.append("data", JSON.stringify(jsonData));
+      formDataToSend.append("data", JSON.stringify(jsonData)); // Append JSON string under 'data' key
 
       // Append files
       if (formData.loiDocument)
@@ -158,28 +152,21 @@ export default function RepresentativeForm({
       if (formData.gisDetails)
         formDataToSend.append("gisDetails", formData.gisDetails);
 
+      // Submit the payload to the backend
+      console.log("Sending payload to backend:", formDataToSend);
+
       let response;
-
-      // Determine whether to use POST (add) or PUT (update)
       if (isEditMode && formData.id) {
-        // Update existing record using PUT request
-        response = await submitUpdateRepresentativeForm(
-          formData.id,
-          formDataToSend
-        );
+        // Call PUT request for updates
+        response = await submitUpdateForm(formData.id, formDataToSend);
       } else {
-        // Add new record using POST request
+        // Call POST request for new records
         response = await submitRepresentativeForm(formDataToSend);
-      }
-
-      // Validate the response
-      if (!response || !response.data) {
-        throw new Error("Invalid response from server. No data received.");
       }
 
       // Invoke the success callback with the backend response
       if (onFormSubmitSuccess) {
-        onFormSubmitSuccess(response); // Pass the response to the parent component
+        onFormSubmitSuccess(response);
       }
 
       alert(
@@ -189,7 +176,7 @@ export default function RepresentativeForm({
       );
       onClose(); // Close the dialog after submission
     } catch (error) {
-      console.error("Error submitting form:", error);
+      console.error("Failed to submit form:", error);
       alert("An error occurred while submitting the form.");
     }
   };
@@ -215,7 +202,6 @@ export default function RepresentativeForm({
                     value={formData.groupName}
                     onChange={onFormChange}
                     fullWidth
-                    required
                     className="text-field"
                   />
                 </Grid>
@@ -226,7 +212,6 @@ export default function RepresentativeForm({
                     value={formData.representativeName}
                     onChange={onFormChange}
                     fullWidth
-                    required
                     className="text-field"
                   />
                 </Grid>
@@ -237,7 +222,6 @@ export default function RepresentativeForm({
                     value={formData.representativeIdNumber}
                     onChange={onFormChange}
                     fullWidth
-                    required
                     className="text-field"
                   />
                 </Grid>
@@ -248,7 +232,6 @@ export default function RepresentativeForm({
                     value={formData.representativePhone}
                     onChange={onFormChange}
                     fullWidth
-                    required
                     className="text-field"
                   />
                 </Grid>
@@ -316,7 +299,6 @@ export default function RepresentativeForm({
                           )
                         }
                         fullWidth
-                        required
                         className="text-field"
                       />
                     </Grid>
@@ -333,7 +315,6 @@ export default function RepresentativeForm({
                           )
                         }
                         fullWidth
-                        required
                         className="text-field"
                       />
                     </Grid>

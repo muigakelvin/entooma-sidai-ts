@@ -9,20 +9,18 @@ import {
   Grid,
   TextField,
   Typography,
+  Alert,
 } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers";
 import dayjs, { Dayjs } from "dayjs";
-import {
-  submitAddFormDialog,
-  submitUpdateAddFormDialog, // Updated import for PUT endpoint
-} from "../services/apiService";
+import { submitAddFormDialog } from "../services/apiService"; // Import the API service function
 import "../index.css";
 
 // Define the shape of the form data
 interface FormData {
-  id?: number | null; // Unique identifier for updates
+  id?: number | null;
   communityMember: string;
   idNumber: string;
   phoneNumber: string;
@@ -114,26 +112,20 @@ export default function AddFormDialog({
 
       // Serialize non-file fields into a JSON string
       const jsonData = {
-        id: formData.id, // Always include ID for updates
-        communityMember: formData.communityMember || "",
-        idNumber: formData.idNumber || "",
-        phoneNumber: formData.phoneNumber || "",
-        communityName: formData.communityName || "",
-        landSize: formData.landSize || "",
-        sublocation: formData.sublocation || "",
-        location: formData.location || "",
-        fieldCoordinator: formData.fieldCoordinator || "",
-        witnessLocal: formData.witnessLocal || "",
-        signedLocal: formData.signedLocal || "",
-        signedOrg: formData.signedOrg || "",
-        dateSigned: formData.dateSigned?.format("YYYY-MM-DD") || null,
-        source: formData.source || "Other", // Default to "Other" if not provided
+        communityMember: formData.communityMember,
+        idNumber: formData.idNumber,
+        phoneNumber: formData.phoneNumber,
+        communityName: formData.communityName,
+        landSize: formData.landSize,
+        sublocation: formData.sublocation,
+        location: formData.location,
+        fieldCoordinator: formData.fieldCoordinator,
+        witnessLocal: formData.witnessLocal,
+        signedLocal: formData.signedLocal,
+        signedOrg: formData.signedOrg,
+        dateSigned: formData.dateSigned?.format("YYYY-MM-DD"),
+        source: formData.source || "", // Default to empty string if not provided
       };
-
-      // Log the JSON payload for debugging
-      console.log("JSON payload:", jsonData);
-
-      // Append JSON data to FormData
       formDataToSend.append("data", JSON.stringify(jsonData));
 
       // Append files
@@ -144,21 +136,8 @@ export default function AddFormDialog({
       if (formData.gisDetails)
         formDataToSend.append("gisDetails", formData.gisDetails);
 
-      // Log the FormData object for debugging
-      for (let [key, value] of formDataToSend.entries()) {
-        console.log(`${key}:`, value);
-      }
-
-      let response;
-
-      // Determine whether to use POST (add) or PUT (update)
-      if (isEditMode && formData.id) {
-        // Update existing record using PUT request
-        response = await submitUpdateAddFormDialog(formData.id, formDataToSend); // Use the PUT endpoint
-      } else {
-        // Add new record using POST request
-        response = await submitAddFormDialog(formDataToSend);
-      }
+      // Submit the payload to the backend
+      const response = await submitAddFormDialog(formDataToSend);
 
       // Validate the response
       if (!response || !response.data) {
@@ -170,12 +149,7 @@ export default function AddFormDialog({
         onFormSubmitSuccess(response); // Pass the response to the parent component
       }
 
-      alert(
-        isEditMode
-          ? "Record updated successfully!"
-          : "Record added successfully!"
-      );
-
+      alert("Form submitted successfully!");
       onClose(); // Close the dialog after submission
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -186,7 +160,7 @@ export default function AddFormDialog({
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle className="dialog-title">
-        {isEditMode ? "Edit Record" : "Add New Record"} {/* Dynamic title */}
+        {isEditMode ? "Edit Record" : "Add New Record"}
       </DialogTitle>
       <DialogContent className="dialog-content">
         <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -243,7 +217,6 @@ export default function AddFormDialog({
                 </Grid>
               </Grid>
             </Box>
-
             {/* Land Details Section */}
             <Box className="section-box">
               <Typography variant="h6" className="section-header">
@@ -285,7 +258,6 @@ export default function AddFormDialog({
                 </Grid>
               </Grid>
             </Box>
-
             {/* Authorized Signatories Section */}
             <Box className="section-box">
               <Typography variant="h6" className="section-header">
@@ -357,7 +329,6 @@ export default function AddFormDialog({
                 </Grid>
               </Grid>
             </Box>
-
             {/* Documents and GIS Information Section */}
             <Box className="section-box">
               <Typography variant="h6" className="section-header">
@@ -411,8 +382,7 @@ export default function AddFormDialog({
           className="submit-button"
           variant="contained"
         >
-          {isEditMode ? "Save Changes" : "Add Record"}{" "}
-          {/* Dynamic button label */}
+          {isEditMode ? "Save Changes" : "Add Record"}
         </Button>
       </DialogActions>
     </Dialog>

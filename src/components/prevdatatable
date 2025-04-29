@@ -1,3 +1,4 @@
+// src/components/DataTable.tsx
 import * as React from "react";
 import {
   Table,
@@ -74,10 +75,12 @@ export default function DataTable() {
   const [filters, setFilters] = React.useState<Record<string, any>>({});
   const [isFilterPanelOpen, setIsFilterPanelOpen] =
     React.useState<boolean>(false);
+
+  // New State for Search Term
   const [searchTerm, setSearchTerm] = React.useState<string>("");
+
   const API_BASE_URL = "http://localhost:8080/api/forms";
 
-  // Fetch initial data
   React.useEffect(() => {
     const fetchData = async () => {
       try {
@@ -104,36 +107,22 @@ export default function DataTable() {
     fetchData();
   }, []);
 
-  // Debugging: Check for duplicate IDs in rows
-  React.useEffect(() => {
-    const uniqueIds = new Set(rows.map((row) => row.id));
-    if (uniqueIds.size !== rows.length) {
-      console.error("Duplicate IDs detected in rows:", rows);
-    }
-  }, [rows]);
-
-  // Debugging: Check for duplicate IDs in filteredRows
-  React.useEffect(() => {
-    const uniqueIds = new Set(filteredRows.map((row) => row.id));
-    if (uniqueIds.size !== filteredRows.length) {
-      console.error("Duplicate IDs detected in filteredRows:", filteredRows);
-    }
-  }, [filteredRows]);
-
-  // Handle search input
+  // Function to handle search
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const term = event.target.value.toLowerCase();
     setSearchTerm(term);
+
+    // Apply search filter
     const filtered = rows.filter((row) =>
       Object.values(row).some(
         (value) =>
           typeof value === "string" && value.toLowerCase().includes(term)
       )
     );
+
     setFilteredRows(filtered);
   };
 
-  // Columns for filtering
   const columns = [
     { id: "communityMember", label: "Community Member" },
     { id: "idNumber", label: "ID Number" },
@@ -152,7 +141,6 @@ export default function DataTable() {
     { id: "gisDetails", label: "GIS Details" },
   ];
 
-  // Apply filters
   const handleApplyFilters = (appliedFilters: Record<string, any>) => {
     setFilters(appliedFilters);
     const filtered = rows.filter((row) =>
@@ -165,13 +153,11 @@ export default function DataTable() {
     setFilteredRows(filtered);
   };
 
-  // Reset filters
   const handleResetFilters = () => {
     setFilters({});
     setFilteredRows(rows);
   };
 
-  // Initial form data
   const initialIndividualFormData: RowData = {
     id: null,
     communityMember: "",
@@ -203,12 +189,10 @@ export default function DataTable() {
     initialIndividualFormData
   );
 
-  // Expand/Collapse row details
   const handleExpand = (id: number) => {
     setExpandedRow(expandedRow === id ? null : id);
   };
 
-  // Open form dialog
   const handleOpenForm = (formType: "individual" | "representative") => {
     if (formType === "representative") {
       setIsRepresentativeFormOpen(true);
@@ -221,7 +205,6 @@ export default function DataTable() {
     }
   };
 
-  // Close form dialog
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setIsRepresentativeFormOpen(false);
@@ -232,7 +215,6 @@ export default function DataTable() {
     );
   };
 
-  // Handle form input changes
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (name === "dateSigned") {
@@ -249,18 +231,15 @@ export default function DataTable() {
     }
   };
 
-  // Submit form data
   const handleSubmit = async (submittedData: RowData) => {
     try {
       let response;
       if (submittedData.id) {
-        // Send a PUT request for updates
         response = await axios.put(
           `${API_BASE_URL}/${submittedData.id}`,
           submittedData
         );
       } else {
-        // Send a POST request for new records
         response = await axios.post(
           submittedData.source === "RepresentativeForm"
             ? `${API_BASE_URL}/representative-form`
@@ -282,47 +261,36 @@ export default function DataTable() {
               phoneNumber: newRow.phoneNumber || newRow.representativePhone,
             }
           : newRow;
-
       if (submittedData.id) {
-        // Update the existing record in the state
-        setRows((prevRows) =>
-          prevRows.map((row) =>
-            row.id === submittedData.id ? processedNewRow : row
-          )
+        const updatedRows = rows.map((row) =>
+          row.id === submittedData.id ? processedNewRow : row
         );
-        setFilteredRows((prevFilteredRows) =>
-          prevFilteredRows.map((row) =>
-            row.id === submittedData.id ? processedNewRow : row
-          )
-        );
+        setRows(updatedRows);
+        setFilteredRows(updatedRows);
       } else {
-        // Add the new record to the state
         setRows((prevRows) => [...prevRows, processedNewRow]);
         setFilteredRows((prevFilteredRows) => [
           ...prevFilteredRows,
           processedNewRow,
         ]);
       }
-      alert(
-        submittedData.id
-          ? "Record updated successfully!"
-          : "Record added successfully!"
-      );
+      handleCloseForm();
     } catch (error) {
       console.error("Error submitting form:", error);
-      alert("An error occurred while submitting the form.");
     }
   };
 
-  // Edit record
   const handleEdit = async (id: number) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/${id}`);
       if (!response || !response.data || !response.data.data) {
         throw new Error("Invalid or missing data from server.");
       }
-      const rowToEdit = response.data.data;
-      const source = rowToEdit.source?.trim() || "Other";
+      const rowToEdit = response.data.data; // Access the nested `data` property
+      console.log("Server Response for Edit:", rowToEdit); // Debugging the full response
+      console.log("Source Field:", rowToEdit.source); // Debugging the source field
+      const source = rowToEdit.source?.trim() || "Other"; // Safeguard against undefined source
+      console.log("Resolved Source:", source);
       if (source === "RepresentativeForm") {
         setFormData({
           id: rowToEdit.id,
@@ -345,7 +313,7 @@ export default function DataTable() {
           loiDocument: rowToEdit.loiDocument || "",
           mouDocument: rowToEdit.mouDocument || "",
           source: "RepresentativeForm",
-          members: rowToEdit.members || [],
+          members: rowToEdit.members || [], // Ensure members are populated
         });
         setIsRepresentativeFormOpen(true);
         setIsFormOpen(false);
@@ -370,7 +338,7 @@ export default function DataTable() {
           loiDocument: rowToEdit.loiDocument || "",
           mouDocument: rowToEdit.mouDocument || "",
           source: "Other",
-          members: [],
+          members: [], // No members for "Other" source
         });
         setIsFormOpen(true);
         setIsRepresentativeFormOpen(false);
@@ -380,7 +348,6 @@ export default function DataTable() {
     }
   };
 
-  // Delete record
   const handleDelete = async (id: number) => {
     try {
       await axios.delete(`${API_BASE_URL}/${id}`);
@@ -747,29 +714,12 @@ export default function DataTable() {
                       newRow.phoneNumber || newRow.representativePhone,
                   }
                 : newRow;
-            if (formData.id) {
-              setRows((prevRows) =>
-                prevRows.map((row) =>
-                  row.id === formData.id ? processedNewRow : row
-                )
-              );
-              setFilteredRows((prevFilteredRows) =>
-                prevFilteredRows.map((row) =>
-                  row.id === formData.id ? processedNewRow : row
-                )
-              );
-            } else {
-              setRows((prevRows) => [...prevRows, processedNewRow]);
-              setFilteredRows((prevFilteredRows) => [
-                ...prevFilteredRows,
-                processedNewRow,
-              ]);
-            }
-            alert(
-              formData.id
-                ? "Record updated successfully!"
-                : "Record added successfully!"
-            );
+            setRows((prevRows) => [...prevRows, processedNewRow]);
+            setFilteredRows((prevFilteredRows) => [
+              ...prevFilteredRows,
+              processedNewRow,
+            ]);
+            alert("Record added successfully!");
           }}
           isEditMode={!!formData.id}
         />
@@ -806,31 +756,13 @@ export default function DataTable() {
                       newRow.phoneNumber || newRow.representativePhone,
                   }
                 : newRow;
-            if (formData.id) {
-              setRows((prevRows) =>
-                prevRows.map((row) =>
-                  row.id === formData.id ? processedNewRow : row
-                )
-              );
-              setFilteredRows((prevFilteredRows) =>
-                prevFilteredRows.map((row) =>
-                  row.id === formData.id ? processedNewRow : row
-                )
-              );
-            } else {
-              setRows((prevRows) => [...prevRows, processedNewRow]);
-              setFilteredRows((prevFilteredRows) => [
-                ...prevFilteredRows,
-                processedNewRow,
-              ]);
-            }
-            alert(
-              formData.id
-                ? "Record updated successfully!"
-                : "Record added successfully!"
-            );
+            setRows((prevRows) => [...prevRows, processedNewRow]);
+            setFilteredRows((prevFilteredRows) => [
+              ...prevFilteredRows,
+              processedNewRow,
+            ]);
+            alert("Record added successfully!");
           }}
-          isEditMode={!!formData.id}
         />
       )}
     </Box>

@@ -27,7 +27,7 @@ export const submitAddFormDialog = async (formData: FormData) => {
 };
 
 /**
- * Update an existing AddFormDialog record.
+ * Partially update an existing AddFormDialog record.
  * @param id - The ID of the record to update.
  * @param formData - FormData object containing updated form fields and files.
  * @returns The server response data.
@@ -37,8 +37,8 @@ export const submitUpdateAddFormDialog = async (
   formData: FormData
 ) => {
   try {
-    const response = await axios.put(
-      `${API_BASE_URL}/add-form-dialog/${id}`, // Endpoint for updating AddFormDialog
+    const response = await axios.patch(
+      `${API_BASE_URL}/add-form-dialog/${id}`, // Use PATCH for partial updates
       formData,
       {
         headers: {
@@ -46,10 +46,13 @@ export const submitUpdateAddFormDialog = async (
         },
       }
     );
-    console.log("Response from server (Update AddFormDialog):", response.data);
+    console.log(
+      "Response from server (Partial Update AddFormDialog):",
+      response.data
+    );
     return response.data;
   } catch (error) {
-    console.error("Error updating AddFormDialog:", error);
+    console.error("Error partially updating AddFormDialog:", error);
     throw error; // Re-throw the error for handling in the calling function
   }
 };
@@ -79,7 +82,7 @@ export const submitRepresentativeForm = async (formData: FormData) => {
 };
 
 /**
- * Update an existing RepresentativeForm record.
+ * Partially update an existing RepresentativeForm record.
  * @param id - The ID of the record to update.
  * @param formData - FormData object containing updated form fields and files.
  * @returns The server response data.
@@ -89,8 +92,8 @@ export const submitUpdateRepresentativeForm = async (
   formData: FormData
 ) => {
   try {
-    const response = await axios.put(
-      `${API_BASE_URL}/representative-form/${id}`, // Endpoint for updating RepresentativeForm
+    const response = await axios.patch(
+      `${API_BASE_URL}/representative-form/${id}`, // Use PATCH for partial updates
       formData,
       {
         headers: {
@@ -99,12 +102,12 @@ export const submitUpdateRepresentativeForm = async (
       }
     );
     console.log(
-      "Response from server (Update RepresentativeForm):",
+      "Response from server (Partial Update RepresentativeForm):",
       response.data
     );
     return response.data;
   } catch (error) {
-    console.error("Error updating RepresentativeForm:", error);
+    console.error("Error partially updating RepresentativeForm:", error);
     throw error; // Re-throw the error for handling in the calling function
   }
 };

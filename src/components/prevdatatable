@@ -75,10 +75,7 @@ export default function DataTable() {
   const [filters, setFilters] = React.useState<Record<string, any>>({});
   const [isFilterPanelOpen, setIsFilterPanelOpen] =
     React.useState<boolean>(false);
-
-  // New State for Search Term
   const [searchTerm, setSearchTerm] = React.useState<string>("");
-
   const API_BASE_URL = "http://localhost:8080/api/forms";
 
   React.useEffect(() => {
@@ -107,19 +104,15 @@ export default function DataTable() {
     fetchData();
   }, []);
 
-  // Function to handle search
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const term = event.target.value.toLowerCase();
     setSearchTerm(term);
-
-    // Apply search filter
     const filtered = rows.filter((row) =>
       Object.values(row).some(
         (value) =>
           typeof value === "string" && value.toLowerCase().includes(term)
       )
     );
-
     setFilteredRows(filtered);
   };
 
@@ -235,11 +228,13 @@ export default function DataTable() {
     try {
       let response;
       if (submittedData.id) {
+        // Send a PUT request for updates
         response = await axios.put(
           `${API_BASE_URL}/${submittedData.id}`,
           submittedData
         );
       } else {
+        // Send a POST request for new records
         response = await axios.post(
           submittedData.source === "RepresentativeForm"
             ? `${API_BASE_URL}/representative-form`
@@ -261,13 +256,16 @@ export default function DataTable() {
               phoneNumber: newRow.phoneNumber || newRow.representativePhone,
             }
           : newRow;
+
       if (submittedData.id) {
+        // Update the existing record in the state
         const updatedRows = rows.map((row) =>
           row.id === submittedData.id ? processedNewRow : row
         );
         setRows(updatedRows);
         setFilteredRows(updatedRows);
       } else {
+        // Add the new record to the state
         setRows((prevRows) => [...prevRows, processedNewRow]);
         setFilteredRows((prevFilteredRows) => [
           ...prevFilteredRows,
@@ -286,14 +284,11 @@ export default function DataTable() {
       if (!response || !response.data || !response.data.data) {
         throw new Error("Invalid or missing data from server.");
       }
-      const rowToEdit = response.data.data; // Access the nested `data` property
-      console.log("Server Response for Edit:", rowToEdit); // Debugging the full response
-      console.log("Source Field:", rowToEdit.source); // Debugging the source field
-      const source = rowToEdit.source?.trim() || "Other"; // Safeguard against undefined source
-      console.log("Resolved Source:", source);
+      const rowToEdit = response.data.data;
+      const source = rowToEdit.source?.trim() || "Other";
       if (source === "RepresentativeForm") {
         setFormData({
-          id: rowToEdit.id,
+          id: rowToEdit.id, // Ensure this is set correctly
           representativeName: rowToEdit.representativeName || "",
           representativeIdNumber: rowToEdit.representativeIdNumber || "",
           representativePhone: rowToEdit.representativePhone || "",
@@ -313,13 +308,13 @@ export default function DataTable() {
           loiDocument: rowToEdit.loiDocument || "",
           mouDocument: rowToEdit.mouDocument || "",
           source: "RepresentativeForm",
-          members: rowToEdit.members || [], // Ensure members are populated
+          members: rowToEdit.members || [],
         });
         setIsRepresentativeFormOpen(true);
         setIsFormOpen(false);
       } else {
         setFormData({
-          id: rowToEdit.id,
+          id: rowToEdit.id, // Ensure this is set correctly
           communityMember: rowToEdit.communityMember || "",
           idNumber: rowToEdit.idNumber || "",
           phoneNumber: rowToEdit.phoneNumber || "",
@@ -338,7 +333,7 @@ export default function DataTable() {
           loiDocument: rowToEdit.loiDocument || "",
           mouDocument: rowToEdit.mouDocument || "",
           source: "Other",
-          members: [], // No members for "Other" source
+          members: [],
         });
         setIsFormOpen(true);
         setIsRepresentativeFormOpen(false);
@@ -756,13 +751,23 @@ export default function DataTable() {
                       newRow.phoneNumber || newRow.representativePhone,
                   }
                 : newRow;
-            setRows((prevRows) => [...prevRows, processedNewRow]);
-            setFilteredRows((prevFilteredRows) => [
-              ...prevFilteredRows,
-              processedNewRow,
-            ]);
-            alert("Record added successfully!");
+            setRows((prevRows) =>
+              prevRows.map((row) =>
+                row.id === formData.id ? processedNewRow : row
+              )
+            );
+            setFilteredRows((prevFilteredRows) =>
+              prevFilteredRows.map((row) =>
+                row.id === formData.id ? processedNewRow : row
+              )
+            );
+            alert(
+              formData.id
+                ? "Record updated successfully!"
+                : "Record added successfully!"
+            );
           }}
+          isEditMode={!!formData.id} // Pass isEditMode prop here
         />
       )}
     </Box>

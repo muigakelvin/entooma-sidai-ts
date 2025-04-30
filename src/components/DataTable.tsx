@@ -18,6 +18,10 @@ import {
   InputAdornment,
   Card,
   CardContent,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
@@ -41,7 +45,6 @@ interface Member {
   memberIdNumber: string;
   titleNumber: string;
 }
-
 interface RowData {
   id?: number | null;
   communityMember: string;
@@ -75,6 +78,9 @@ export default function DataTable() {
   const [isFilterPanelOpen, setIsFilterPanelOpen] =
     React.useState<boolean>(false);
   const [searchTerm, setSearchTerm] = React.useState<string>("");
+  const [isPdfViewerOpen, setIsPdfViewerOpen] = React.useState<boolean>(false);
+  const [currentPdfUrl, setCurrentPdfUrl] = React.useState<string | null>(null);
+
   const API_BASE_URL = "http://localhost:8080/api/forms";
 
   // Fetch initial data
@@ -103,22 +109,6 @@ export default function DataTable() {
     };
     fetchData();
   }, []);
-
-  // Debugging: Check for duplicate IDs in rows
-  React.useEffect(() => {
-    const uniqueIds = new Set(rows.map((row) => row.id));
-    if (uniqueIds.size !== rows.length) {
-      console.error("Duplicate IDs detected in rows:", rows);
-    }
-  }, [rows]);
-
-  // Debugging: Check for duplicate IDs in filteredRows
-  React.useEffect(() => {
-    const uniqueIds = new Set(filteredRows.map((row) => row.id));
-    if (uniqueIds.size !== filteredRows.length) {
-      console.error("Duplicate IDs detected in filteredRows:", filteredRows);
-    }
-  }, [filteredRows]);
 
   // Handle search input
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -181,7 +171,6 @@ export default function DataTable() {
     communityName: "",
     sublocation: "",
     location: "",
-    gisDetails: "",
     fieldCoordinator: "",
     dateSigned: null,
     signedLocal: "",
@@ -191,8 +180,8 @@ export default function DataTable() {
     mouDocument: "",
     source: "Other",
     members: [],
+    gisDetails: "",
   };
-
   const initialRepresentativeFormData: RowData = {
     ...initialIndividualFormData,
     source: "RepresentativeForm",
@@ -254,13 +243,11 @@ export default function DataTable() {
     try {
       let response;
       if (submittedData.id) {
-        // Send a PUT request for updates
         response = await axios.put(
           `${API_BASE_URL}/${submittedData.id}`,
           submittedData
         );
       } else {
-        // Send a POST request for new records
         response = await axios.post(
           submittedData.source === "RepresentativeForm"
             ? `${API_BASE_URL}/representative-form`
@@ -268,9 +255,11 @@ export default function DataTable() {
           submittedData
         );
       }
+
       if (!response || !response.data) {
         throw new Error("Invalid response from server.");
       }
+
       const newRow = response.data;
       const processedNewRow =
         newRow.source === "RepresentativeForm"
@@ -284,7 +273,6 @@ export default function DataTable() {
           : newRow;
 
       if (submittedData.id) {
-        // Update the existing record in the state
         setRows((prevRows) =>
           prevRows.map((row) =>
             row.id === submittedData.id ? processedNewRow : row
@@ -296,13 +284,13 @@ export default function DataTable() {
           )
         );
       } else {
-        // Add the new record to the state
         setRows((prevRows) => [...prevRows, processedNewRow]);
         setFilteredRows((prevFilteredRows) => [
           ...prevFilteredRows,
           processedNewRow,
         ]);
       }
+
       alert(
         submittedData.id
           ? "Record updated successfully!"
@@ -392,6 +380,18 @@ export default function DataTable() {
     }
   };
 
+  // PDF Viewer Handler
+  const handleOpenPdfViewer = (url: string | null | undefined) => {
+    if (!url) return;
+    // Ensure it uses the backend API host
+    const fullPath = url.startsWith("http")
+      ? url
+      : `http://localhost:8080${url}`;
+
+    setCurrentPdfUrl(fullPath);
+    setIsPdfViewerOpen(true);
+  };
+
   return (
     <Box className="data-table">
       {/* Header Section */}
@@ -432,6 +432,7 @@ export default function DataTable() {
           </Button>
         </Box>
       </Box>
+
       {/* Table Content */}
       <TableContainer component={Paper}>
         <Table>
@@ -495,6 +496,7 @@ export default function DataTable() {
                     </Tooltip>
                   </TableCell>
                 </TableRow>
+
                 {/* Detail Row */}
                 <TableRow>
                   <TableCell colSpan={6} className="detail-panel">
@@ -541,6 +543,7 @@ export default function DataTable() {
                             </div>
                           </CardContent>
                         </Card>
+
                         {/* Documentation Card */}
                         <Card variant="outlined" className="detail-card">
                           <CardContent>
@@ -562,13 +565,14 @@ export default function DataTable() {
                               </span>
                               {row.loiDocument &&
                               row.loiDocument !== "Not Uploaded" ? (
-                                <a
-                                  href={row.loiDocument}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                <Button
+                                  onClick={() =>
+                                    handleOpenPdfViewer(row.loiDocument)
+                                  }
+                                  color="primary"
                                 >
                                   View LOI
-                                </a>
+                                </Button>
                               ) : (
                                 <span className="detail-value">
                                   Not Uploaded
@@ -581,13 +585,14 @@ export default function DataTable() {
                               </span>
                               {row.mouDocument &&
                               row.mouDocument !== "Not Uploaded" ? (
-                                <a
-                                  href={row.mouDocument}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                <Button
+                                  onClick={() =>
+                                    handleOpenPdfViewer(row.mouDocument)
+                                  }
+                                  color="primary"
                                 >
                                   View MOU
-                                </a>
+                                </Button>
                               ) : (
                                 <span className="detail-value">
                                   Not Uploaded
@@ -596,6 +601,7 @@ export default function DataTable() {
                             </div>
                           </CardContent>
                         </Card>
+
                         {/* Approved Signatories Card */}
                         <Card variant="outlined" className="detail-card">
                           <CardContent>
@@ -646,6 +652,7 @@ export default function DataTable() {
                             </Grid>
                           </CardContent>
                         </Card>
+
                         {/* Conditional Fourth Card for RepresentativeForm Source */}
                         {row.source === "RepresentativeForm" && (
                           <Card variant="outlined" className="detail-card">
@@ -713,6 +720,7 @@ export default function DataTable() {
           </TableBody>
         </Table>
       </TableContainer>
+
       {/* Filter Panel */}
       <FilterPanel
         open={isFilterPanelOpen}
@@ -722,6 +730,39 @@ export default function DataTable() {
         onApply={handleApplyFilters}
         onReset={handleResetFilters}
       />
+
+      {/* PDF Viewer Dialog */}
+      <Dialog
+        open={isPdfViewerOpen}
+        onClose={() => setIsPdfViewerOpen(false)}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle>View Document</DialogTitle>
+        <DialogContent>
+          {currentPdfUrl ? (
+            <iframe
+              src={currentPdfUrl}
+              title="PDF Viewer"
+              width="100%"
+              height="600px"
+              style={{ border: "none" }}
+              onLoad={() => console.log("PDF loaded")}
+            >
+              This browser does not support PDFs. Please download the file to
+              view it.
+            </iframe>
+          ) : (
+            <Typography>Loading...</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsPdfViewerOpen(false)} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Add/Edit Form Dialog */}
       {isFormOpen && (
         <AddFormDialog
@@ -774,6 +815,7 @@ export default function DataTable() {
           isEditMode={!!formData.id}
         />
       )}
+
       {/* Representative Form Dialog */}
       {isRepresentativeFormOpen && (
         <RepresentativeForm

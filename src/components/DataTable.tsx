@@ -38,13 +38,21 @@ import AddFormDialog from "./AddFormDialog";
 import RepresentativeForm from "./RepresentativeForm";
 import FilterPanel from "./FilterPanel";
 import "../index.css";
-
+// GIS Viewer Imports
+import { GoogleMap, Polyline } from "@react-google-maps/api";
+// TrackPoint Interface
+interface TrackPoint {
+  lat: number;
+  lng: number;
+}
+// Member Interface
 interface Member {
   memberName: string;
   memberPhoneNumber: string;
   memberIdNumber: string;
   titleNumber: string;
 }
+// RowData Interface
 interface RowData {
   id?: number | null;
   communityMember: string;
@@ -66,8 +74,22 @@ interface RowData {
   groupName?: string;
   gisDetails?: string;
 }
+// Main Component with LoadScript wrapper
+const Wrapper = () => (
+  <LoadScript googleMapsApiKey="AIzaSyD3er79jHsbfyl_okJYlzlbxRi552w9-1c">
+    <DataTable />
+  </LoadScript>
+);
 
 export default function DataTable() {
+  // GIS Viewer State
+  const [isGisViewerOpen, setIsGisViewerOpen] = React.useState<boolean>(false);
+  const [currentGpxPoints, setCurrentGpxPoints] = React.useState<TrackPoint[]>(
+    []
+  );
+  const [gisError, setGisError] = React.useState<string | null>(null);
+
+  // Existing State
   const [expandedRow, setExpandedRow] = React.useState<number | null>(null);
   const [rows, setRows] = React.useState<RowData[]>([]);
   const [filteredRows, setFilteredRows] = React.useState<RowData[]>([]);
@@ -83,7 +105,7 @@ export default function DataTable() {
 
   const API_BASE_URL = "http://localhost:8080/api/forms";
 
-  // Fetch initial data
+  // Fetch Initial Data
   React.useEffect(() => {
     const fetchData = async () => {
       try {
@@ -110,7 +132,7 @@ export default function DataTable() {
     fetchData();
   }, []);
 
-  // Handle search input
+  // Handle Search
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const term = event.target.value.toLowerCase();
     setSearchTerm(term);
@@ -123,7 +145,7 @@ export default function DataTable() {
     setFilteredRows(filtered);
   };
 
-  // Columns for filtering
+  // Columns for Filtering
   const columns = [
     { id: "communityMember", label: "Community Member" },
     { id: "idNumber", label: "ID Number" },
@@ -133,16 +155,10 @@ export default function DataTable() {
     { id: "sublocation", label: "Sublocation" },
     { id: "location", label: "Location" },
     { id: "fieldCoordinator", label: "Field Coordinator" },
-    { id: "dateSigned", label: "Date Signed" },
-    { id: "signedLocal", label: "Signed Local" },
-    { id: "signedOrg", label: "Signed Org" },
-    { id: "witnessLocal", label: "Witness Local" },
-    { id: "loiDocument", label: "LOI Document" },
-    { id: "mouDocument", label: "MOU Document" },
     { id: "gisDetails", label: "GIS Details" },
   ];
 
-  // Apply filters
+  // Apply Filters
   const handleApplyFilters = (appliedFilters: Record<string, any>) => {
     setFilters(appliedFilters);
     const filtered = rows.filter((row) =>
@@ -155,13 +171,13 @@ export default function DataTable() {
     setFilteredRows(filtered);
   };
 
-  // Reset filters
+  // Reset Filters
   const handleResetFilters = () => {
     setFilters({});
     setFilteredRows(rows);
   };
 
-  // Initial form data
+  // Form Data
   const initialIndividualFormData: RowData = {
     id: null,
     communityMember: "",
@@ -187,17 +203,16 @@ export default function DataTable() {
     source: "RepresentativeForm",
     groupName: "",
   };
-
   const [formData, setFormData] = React.useState<RowData>(
     initialIndividualFormData
   );
 
-  // Expand/Collapse row details
+  // Expand/Collapse Row
   const handleExpand = (id: number) => {
     setExpandedRow(expandedRow === id ? null : id);
   };
 
-  // Open form dialog
+  // Open Form
   const handleOpenForm = (formType: "individual" | "representative") => {
     if (formType === "representative") {
       setIsRepresentativeFormOpen(true);
@@ -210,7 +225,7 @@ export default function DataTable() {
     }
   };
 
-  // Close form dialog
+  // Close Form
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setIsRepresentativeFormOpen(false);
@@ -221,7 +236,7 @@ export default function DataTable() {
     );
   };
 
-  // Handle form input changes
+  // Form Change Handler
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (name === "dateSigned") {
@@ -238,7 +253,7 @@ export default function DataTable() {
     }
   };
 
-  // Submit form data
+  // Submit Form
   const handleSubmit = async (submittedData: RowData) => {
     try {
       let response;
@@ -255,11 +270,9 @@ export default function DataTable() {
           submittedData
         );
       }
-
       if (!response || !response.data) {
         throw new Error("Invalid response from server.");
       }
-
       const newRow = response.data;
       const processedNewRow =
         newRow.source === "RepresentativeForm"
@@ -271,7 +284,6 @@ export default function DataTable() {
               phoneNumber: newRow.phoneNumber || newRow.representativePhone,
             }
           : newRow;
-
       if (submittedData.id) {
         setRows((prevRows) =>
           prevRows.map((row) =>
@@ -290,7 +302,6 @@ export default function DataTable() {
           processedNewRow,
         ]);
       }
-
       alert(
         submittedData.id
           ? "Record updated successfully!"
@@ -302,7 +313,7 @@ export default function DataTable() {
     }
   };
 
-  // Edit record
+  // Edit Record
   const handleEdit = async (id: number) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/${id}`);
@@ -368,7 +379,7 @@ export default function DataTable() {
     }
   };
 
-  // Delete record
+  // Delete Record
   const handleDelete = async (id: number) => {
     try {
       await axios.delete(`${API_BASE_URL}/${id}`);
@@ -383,13 +394,53 @@ export default function DataTable() {
   // PDF Viewer Handler
   const handleOpenPdfViewer = (url: string | null | undefined) => {
     if (!url) return;
-    // Ensure it uses the backend API host
     const fullPath = url.startsWith("http")
       ? url
       : `http://localhost:8080${url}`;
-
     setCurrentPdfUrl(fullPath);
     setIsPdfViewerOpen(true);
+  };
+
+  // GIS Viewer Handler
+  const handleOpenGisViewer = async (gpxPath: string) => {
+    try {
+      setGisError(null);
+      const fullPath = gpxPath.startsWith("http")
+        ? gpxPath
+        : `http://localhost:8080${gpxPath}`;
+      const response = await axios.get(fullPath, { responseType: "text" });
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(response.data, "application/xml");
+      const trackPoints: TrackPoint[] = Array.from(
+        xmlDoc.getElementsByTagName("trkpt")
+      ).map((point) => ({
+        lat: parseFloat(point.getAttribute("lat") || "0"),
+        lng: parseFloat(point.getAttribute("lon") || "0"),
+      }));
+      if (trackPoints.length === 0) {
+        throw new Error("No track points found in GPX file");
+      }
+      setCurrentGpxPoints(trackPoints);
+      setIsGisViewerOpen(true);
+    } catch (error) {
+      console.error("GPX load error:", error);
+      setGisError("Failed to load or parse GPX file");
+      alert("Failed to load or parse GPX file");
+    }
+  };
+
+  // Map Ref for Bounds Adjustment
+  const mapRef = React.useRef<google.maps.Map | null>(null);
+
+  // Map Options
+  const mapOptions = {
+    mapTypeId: "satellite",
+    zoomControl: true,
+    mapTypeControl: false,
+    scaleControl: true,
+    streetViewControl: false,
+    rotateControl: false,
+    fullscreenControl: false,
   };
 
   return (
@@ -496,7 +547,6 @@ export default function DataTable() {
                     </Tooltip>
                   </TableCell>
                 </TableRow>
-
                 {/* Detail Row */}
                 <TableRow>
                   <TableCell colSpan={6} className="detail-panel">
@@ -528,13 +578,16 @@ export default function DataTable() {
                               <span className="detail-label">GIS File:</span>
                               {row.gisDetails &&
                               row.gisDetails !== "Not Available" ? (
-                                <a
-                                  href={row.gisDetails}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                <Button
+                                  onClick={() =>
+                                    handleOpenGisViewer(row.gisDetails)
+                                  }
+                                  color="primary"
+                                  variant="outlined"
+                                  size="small"
                                 >
-                                  View GIS File
-                                </a>
+                                  View GIS Map
+                                </Button>
                               ) : (
                                 <span className="detail-value">
                                   Not Available
@@ -543,7 +596,6 @@ export default function DataTable() {
                             </div>
                           </CardContent>
                         </Card>
-
                         {/* Documentation Card */}
                         <Card variant="outlined" className="detail-card">
                           <CardContent>
@@ -601,7 +653,6 @@ export default function DataTable() {
                             </div>
                           </CardContent>
                         </Card>
-
                         {/* Approved Signatories Card */}
                         <Card variant="outlined" className="detail-card">
                           <CardContent>
@@ -652,7 +703,6 @@ export default function DataTable() {
                             </Grid>
                           </CardContent>
                         </Card>
-
                         {/* Conditional Fourth Card for RepresentativeForm Source */}
                         {row.source === "RepresentativeForm" && (
                           <Card variant="outlined" className="detail-card">
@@ -721,15 +771,60 @@ export default function DataTable() {
         </Table>
       </TableContainer>
 
-      {/* Filter Panel */}
-      <FilterPanel
-        open={isFilterPanelOpen}
-        onClose={() => setIsFilterPanelOpen(false)}
-        columns={columns}
-        filters={filters}
-        onApply={handleApplyFilters}
-        onReset={handleResetFilters}
-      />
+      {/* GIS Viewer Dialog */}
+      <Dialog
+        open={isGisViewerOpen}
+        onClose={() => setIsGisViewerOpen(false)}
+        fullWidth
+        maxWidth="lg"
+      >
+        <DialogTitle>GIS Map Viewer</DialogTitle>
+        <DialogContent>
+          {gisError ? (
+            <Typography color="error">{gisError}</Typography>
+          ) : currentGpxPoints.length === 0 ? (
+            <Typography>Loading map data...</Typography>
+          ) : (
+            <Box style={{ height: "600px", width: "100%" }}>
+              <GoogleMap
+                mapContainerStyle={{ width: "100%", height: "100%" }}
+                center={currentGpxPoints[0]}
+                zoom={13}
+                options={mapOptions}
+                onLoad={(map) => {
+                  mapRef.current = map;
+                  const bounds = new google.maps.LatLngBounds();
+                  currentGpxPoints.forEach((point) => bounds.extend(point));
+                  map.fitBounds(bounds);
+                  map.setZoom(map.getZoom() - 1);
+                }}
+              >
+                {/* Only the Polyline is rendered, no Markers */}
+                {currentGpxPoints.length > 1 && (
+                  <Polyline
+                    key={`polyline-${currentGpxPoints
+                      .map((p) => `${p.lat},${p.lng}`)
+                      .join("-")}`}
+                    path={currentGpxPoints}
+                    options={{
+                      strokeColor: "#FF0000",
+                      strokeOpacity: 1,
+                      strokeWeight: 3,
+                      geodesic: true,
+                      editable: false,
+                    }}
+                  />
+                )}
+              </GoogleMap>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsGisViewerOpen(false)} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* PDF Viewer Dialog */}
       <Dialog
@@ -762,6 +857,16 @@ export default function DataTable() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Filter Panel */}
+      <FilterPanel
+        open={isFilterPanelOpen}
+        onClose={() => setIsFilterPanelOpen(false)}
+        columns={columns}
+        filters={filters}
+        onApply={handleApplyFilters}
+        onReset={handleResetFilters}
+      />
 
       {/* Add/Edit Form Dialog */}
       {isFormOpen && (
@@ -878,3 +983,6 @@ export default function DataTable() {
     </Box>
   );
 }
+
+// Export the wrapped version
+export { Wrapper as DataTableWithMap };
